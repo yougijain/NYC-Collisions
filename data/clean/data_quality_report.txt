@@ -1,0 +1,102 @@
+============================================================
+NYC COLLISIONS DATA QUALITY REPORT
+============================================================
+
+Total Records: 27,164
+Total Columns: 23
+
+------------------------------------------------------------
+COLUMN-LEVEL METRICS
+------------------------------------------------------------
+
+[FAIL] borough
+   Completeness: 67.83% (18,425.0 non-null, 8,739.0 null)
+
+[FAIL] zip_code
+   Completeness: 67.82% (18,422.0 non-null, 8,742.0 null)
+
+[WARN] latitude
+   Completeness: 92.31% (25,074.0 non-null, 2,090.0 null)
+
+[WARN] longitude
+   Completeness: 92.31% (25,074.0 non-null, 2,090.0 null)
+
+[FAIL] on_street_name
+   Completeness: 72.64% (19,731.0 non-null, 7,433.0 null)
+
+[FAIL] cross_street_name
+   Completeness: 48.86% (13,271.0 non-null, 13,893.0 null)
+
+[FAIL] off_street_name
+   Completeness: 27.36% (7,433.0 non-null, 19,731.0 null)
+
+[OK] number_of_persons_injured
+   Completeness: 100.0% (27,164.0 non-null, 0.0 null)
+
+[OK] number_of_persons_killed
+   Completeness: 100.0% (27,164.0 non-null, 0.0 null)
+
+[OK] number_of_pedestrians_injured
+   Completeness: 100.0% (27,164.0 non-null, 0.0 null)
+
+[OK] number_of_pedestrians_killed
+   Completeness: 100.0% (27,164.0 non-null, 0.0 null)
+
+[OK] number_of_cyclist_injured
+   Completeness: 100.0% (27,164.0 non-null, 0.0 null)
+
+[OK] number_of_cyclist_killed
+   Completeness: 100.0% (27,164.0 non-null, 0.0 null)
+
+[OK] number_of_motorist_injured
+   Completeness: 100.0% (27,164.0 non-null, 0.0 null)
+
+[OK] number_of_motorist_killed
+   Completeness: 100.0% (27,164.0 non-null, 0.0 null)
+
+[OK] contributing_factor_vehicle_1
+   Completeness: 99.48% (27,022.0 non-null, 142.0 null)
+
+[FAIL] contributing_factor_vehicle_2
+   Completeness: 76.7% (20,836.0 non-null, 6,328.0 null)
+
+[FAIL] contributing_factor_vehicle_3
+   Completeness: 8.78% (2,384.0 non-null, 24,780.0 null)
+
+[OK] collision_id
+   Completeness: 100.0% (27,164.0 non-null, 0.0 null)
+
+[OK] vehicle_type_code_1
+   Completeness: 98.67% (26,803.0 non-null, 361.0 null)
+
+[FAIL] vehicle_type_code_2
+   Completeness: 66.92% (18,179.0 non-null, 8,985.0 null)
+
+[FAIL] vehicle_type_code_3
+   Completeness: 8.17% (2,218.0 non-null, 24,946.0 null)
+
+[OK] crash_datetime
+   Completeness: 100.0% (27,164.0 non-null, 0.0 null)
+
+------------------------------------------------------------
+DATA VALIDATION CHECKS
+------------------------------------------------------------
+
+[OK] Crash DateTime NULL Check: 0 NULL values (Expected: 0)
+[OK] Date Range: 2020-01-02 02:30:00 to 2025-05-27 21:44:00
+[OK] Negative Injury Counts: 0 (Expected: 0)
+[OK] Geographic Data: 92.31% complete (25,074 records with lat/long)
+
+------------------------------------------------------------
+SUMMARY STATISTICS
+------------------------------------------------------------
+
+Total Injuries: 13,508
+Total Fatalities: 64
+Average Injuries per Crash: 0.50
+Unique Boroughs: 5
+
+------------------------------------------------------------
+OVERALL DATA QUALITY SCORE: 52.2%
+(12/23 columns with >=95% completeness)
+============================================================
