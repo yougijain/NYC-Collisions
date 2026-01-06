@@ -1,6 +1,6 @@
 # NYC Collisions Mini-Project
 
-**DEPLOYED LIVE:** https://nyc-collisions-2020-2025.streamlit.app/
+**DEPLOYED LIVE (Note: may take a second to load when prompted):** https://nyc-collisions-2020-2025.streamlit.app/
 
 Learn to ingest data, clean, load to SQLite and make a simple interactive dashboard
 
