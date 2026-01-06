@@ -45,7 +45,7 @@ def main():
     df_filt["crash_datetime_str"] = df_filt["crash_datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
     # Summary Statistics
-    st.subheader("📊 Key Metrics")
+    st.subheader("Key Metrics")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total Incidents", f"{len(df_filt):,}")
@@ -77,7 +77,7 @@ def main():
         st.subheader("Monthly Crash Trends")
         st.line_chart(df4.set_index("month")[["crash_count", "total_injuries", "total_fatalities"]])
     except FileNotFoundError:
-        pass  # Gracefully handle if trends SQL doesn't exist yet
+        pass  
 
 
 
