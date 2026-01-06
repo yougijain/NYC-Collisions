@@ -8,6 +8,30 @@ This project ingests cleaned and sampled data from a longer NYC motor vehicle co
 
 **Deployed Live:** https://nyc-collisions-2020-2025.streamlit.app/
 
+## Project Metrics
+
+### Dataset Scale
+- **27,164 collision records** processed and analyzed
+- **5+ years of temporal data** (January 2020 - May 2025)
+- **13,508 total injuries** tracked across all incidents
+- **64 fatalities** documented and analyzed
+- **10,174 crashes with injuries/fatalities** (37.5% of dataset)
+- **5 NYC boroughs** with comprehensive geographic analysis
+- **Average 1.33 injuries per crash** (where injuries occurred)
+
+### Technical Achievements
+- **100% automated ETL pipeline** (CSV → cleaned data → SQLite database)
+- **4 SQL analysis queries** (filtering, aggregation, time-series, trends)
+- **Interactive Streamlit dashboard** with real-time filtering, visualizations, and heatmap
+- **Automated testing suite** with pytest for data validation
+- **Data quality validation** (98.3-100% sparsity detection, zero NULL datetime values)
+- **Live deployment** on Streamlit Cloud with public access
+
+### Data Processing
+- Column normalization: Automated snake_case conversion
+- Data type optimization: Date/time merging, integer casting
+- Feature engineering: Removed 4 sparse columns (>98% null)
+- Geographic data: Latitude/longitude coordinates for interactive mapping
 
 ## Getting Started
 
@@ -57,7 +81,13 @@ python scripts/load_to_sqlite.py
 pytest -q
 ```
 
-4. **Launch the dashboard**
+4. **Generate data quality report** (optional)
+
+```bash
+python scripts/data_quality_report.py
+```
+
+5. **Launch the dashboard**
 
 ```bash
 streamlit run app/dashboard.py
