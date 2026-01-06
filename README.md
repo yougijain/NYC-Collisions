@@ -1,12 +1,12 @@
 # NYC Collisions Mini-Project
 
+**DEPLOYED LIVE:** https://nyc-collisions-2020-2025.streamlit.app/
+
 Learn to ingest data, clean, load to SQLite and make a simple interactive dashboard
 
 ## Description
 
 This project ingests cleaned and sampled data from a longer NYC motor vehicle collisions dataset into a local SQLite database. It also runs core SQL analysis scripts, validates them using a Jupyter notebook and pytest, and uses Streamlit to dashboard with filters, charts, and a detailed heatmap over New York showing crashes.
-
-**Deployed Live:** https://nyc-collisions-2020-2025.streamlit.app/
 
 ## Project Metrics
 
