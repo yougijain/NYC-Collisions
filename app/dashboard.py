@@ -44,7 +44,22 @@ def main():
     df_filt = df.loc[mask].dropna(subset=["latitude", "longitude"])
     df_filt["crash_datetime_str"] = df_filt["crash_datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
-    st.write(f"**Incidents (injuries/fatalities):** {len(df_filt):,}")
+    # Summary Statistics
+    st.subheader("📊 Key Metrics")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Incidents", f"{len(df_filt):,}")
+    with col2:
+        total_injuries = df_filt["number_of_persons_injured"].sum()
+        st.metric("Total Injuries", f"{int(total_injuries):,}")
+    with col3:
+        total_fatalities = df_filt["number_of_persons_killed"].sum()
+        st.metric("Total Fatalities", f"{int(total_fatalities):,}")
+    with col4:
+        avg_injuries = df_filt[df_filt["number_of_persons_injured"] > 0]["number_of_persons_injured"].mean()
+        st.metric("Avg Injuries/Crash", f"{avg_injuries:.2f}" if not pd.isna(avg_injuries) else "0.00")
+    
+    st.divider()
 
     df2 = load("02_aggregate.sql")
     df2["borough"] = df2["borough"].fillna("UNKNOWN")
@@ -54,6 +69,15 @@ def main():
     df3 = load("03_time_analysis.sql")
     st.subheader("Crashes by Hour (AM/PM)")
     st.line_chart(df3.set_index("hour_label")["crash_count"])
+    
+    # Monthly Trends
+    try:
+        df4 = load("04_trends.sql")
+        df4["month"] = pd.to_datetime(df4["month"])
+        st.subheader("Monthly Crash Trends")
+        st.line_chart(df4.set_index("month")[["crash_count", "total_injuries", "total_fatalities"]])
+    except FileNotFoundError:
+        pass  # Gracefully handle if trends SQL doesn't exist yet
 
 
 
