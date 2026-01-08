@@ -1,7 +1,3 @@
-"""
-Data Quality Report Generator for NYC Collisions Dataset
-Generates comprehensive data quality metrics for resume/portfolio
-"""
 import sqlite3
 import pandas as pd
 from pathlib import Path
