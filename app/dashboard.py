@@ -1,145 +1,202 @@
-import sqlite3, pandas as pd, streamlit as st
-import pydeck as pdk
 import os
+import sys
+from pathlib import Path
 
-DB_PATH = "data/clean/data.db"
-SQL_DIR = "sql"
+import pandas as pd
+import pydeck as pdk
+import streamlit as st
 
-# Load Mapbox key if provided via Streamlit secrets or env
-mapbox_token = st.secrets.get("MAPBOX_API_KEY") or os.getenv("MAPBOX_API_KEY")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-# Choose basemap style
+import db  # noqa: E402
+
+# A browser cannot usefully render more points than this, and shipping them
+# all would exhaust the app's memory on the full dataset.
+MAP_POINT_LIMIT = 50_000
+QUERY_CACHE_TTL = 3600
+
+st.set_page_config(page_title="NYC Collisions Dashboard", layout="wide")
+
+def _mapbox_token() -> str | None:
+    """Read the Mapbox key from Streamlit secrets, falling back to the env.
+
+    st.secrets raises rather than returning None when no secrets.toml exists,
+    which is the normal case for a fresh clone, so the lookup is guarded.
+    """
+    try:
+        token = st.secrets.get("MAPBOX_API_KEY")
+    except Exception:
+        token = None
+    return token or os.getenv("MAPBOX_API_KEY")
+
+
+mapbox_token = _mapbox_token()
 if mapbox_token:
     os.environ["MAPBOX_API_KEY"] = mapbox_token
     BASEMAP = "mapbox://styles/mapbox/dark-v10"
 else:
-    BASEMAP = None  # we’ll use an OpenStreetMap TileLayer instead
+    # Without a token the OpenStreetMap TileLayer below provides the basemap.
+    BASEMAP = None
 
-@st.cache_data(ttl=600)
-def load(sql_file: str) -> pd.DataFrame:
-    with sqlite3.connect(DB_PATH) as conn, open(f"{SQL_DIR}/{sql_file}") as f:
-        return pd.read_sql_query(f.read(), conn)
+
+@st.cache_resource(show_spinner="Loading collision data...")
+def get_connection():
+    """Open the DuckDB connection once per app container."""
+    return db.connect()
+
+
+@st.cache_data(ttl=QUERY_CACHE_TTL, show_spinner=False)
+def run(_con, sql_file: str, params: dict | None = None) -> pd.DataFrame:
+    """Run a query, caching on the SQL file and its parameters.
+
+    The connection is prefixed with an underscore so Streamlit skips hashing
+    it; the cache key is the filename and params, which is what actually
+    identifies a result.
+    """
+    return db.query(_con, sql_file, params)
+
 
 def main():
     st.title("NYC Collisions Dashboard")
 
-    df = load("01_filter.sql")
-    df["crash_datetime"] = pd.to_datetime(df["crash_datetime"])
-    df["borough"] = df["borough"].fillna("UNKNOWN")
+    con = get_connection()
+    bounds = run(con, "00_bounds.sql").iloc[0]
+
+    min_date = pd.Timestamp(bounds["min_datetime"]).date()
+    max_date = pd.Timestamp(bounds["max_datetime"]).date()
+    all_boroughs = list(bounds["boroughs"])
+
+    st.caption(
+        f"{int(bounds['total_crashes']):,} crashes  ·  "
+        f"{min_date} to {max_date}  ·  source: NYC Open Data (h9gi-nx95)"
+    )
 
     st.sidebar.header("Filter Options")
-    min_date = df["crash_datetime"].dt.date.min()
-    max_date = df["crash_datetime"].dt.date.max()
-    start_date, end_date = st.sidebar.date_input(
-        "Date range", (min_date, max_date), min_value=min_date, max_value=max_date
+    date_range = st.sidebar.date_input(
+        "Date range", (min_date, max_date),
+        min_value=min_date, max_value=max_date,
     )
-    boroughs = sorted(df["borough"].unique())
-    selected = st.sidebar.multiselect("Boroughs", boroughs, default=boroughs)
+    # Streamlit returns a 1-tuple while the user is picking the second date.
+    if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
+        start_date, end_date = date_range
+    else:
+        start_date, end_date = min_date, max_date
 
-    mask = (
-        (df["crash_datetime"].dt.date >= start_date) &
-        (df["crash_datetime"].dt.date <= end_date) &
-        (df["borough"].isin(selected))
+    selected = st.sidebar.multiselect(
+        "Boroughs", all_boroughs, default=all_boroughs
     )
-    df_filt = df.loc[mask].dropna(subset=["latitude", "longitude"])
-    df_filt["crash_datetime_str"] = df_filt["crash_datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
+    if not selected:
+        st.warning("Select at least one borough.")
+        st.stop()
 
-    # Summary Statistics
+    params = db.filter_params(start_date, end_date, selected, MAP_POINT_LIMIT)
+
+    # ---------------- Key metrics ----------------
+    metrics = run(con, "01_metrics.sql", params).iloc[0]
     st.subheader("Key Metrics")
+    st.caption("Crashes causing injury or death, within the selected filters.")
+
     col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Total Incidents", f"{len(df_filt):,}")
-    with col2:
-        total_injuries = df_filt["number_of_persons_injured"].sum()
-        st.metric("Total Injuries", f"{int(total_injuries):,}")
-    with col3:
-        total_fatalities = df_filt["number_of_persons_killed"].sum()
-        st.metric("Total Fatalities", f"{int(total_fatalities):,}")
-    with col4:
-        avg_injuries = df_filt[df_filt["number_of_persons_injured"] > 0]["number_of_persons_injured"].mean()
-        st.metric("Avg Injuries/Crash", f"{avg_injuries:.2f}" if not pd.isna(avg_injuries) else "0.00")
-    
+    col1.metric("Total Incidents", f"{int(metrics['crash_count']):,}")
+    col2.metric("Total Injuries", f"{int(metrics['total_injuries']):,}")
+    col3.metric("Total Fatalities", f"{int(metrics['total_fatalities']):,}")
+    avg = metrics["avg_injuries_per_crash"]
+    col4.metric("Avg Injuries/Crash", f"{avg:.2f}" if pd.notna(avg) else "0.00")
+
     st.divider()
 
-    df2 = load("02_aggregate.sql")
-    df2["borough"] = df2["borough"].fillna("UNKNOWN")
+    # ---------------- Charts ----------------
+    by_borough = run(con, "02_aggregate.sql", params)
     st.subheader("Total Injuries by Borough")
-    st.bar_chart(df2[df2["borough"].isin(selected)].set_index("borough")["total_injuries"])
+    st.bar_chart(by_borough.set_index("borough")["total_injuries"])
 
-    df3 = load("03_time_analysis.sql")
+    by_hour = run(con, "03_time_analysis.sql", params)
     st.subheader("Crashes by Hour (AM/PM)")
-    st.line_chart(df3.set_index("hour_label")["crash_count"])
-    
-    # Monthly Trends
-    try:
-        df4 = load("04_trends.sql")
-        df4["month"] = pd.to_datetime(df4["month"])
-        st.subheader("Monthly Crash Trends")
-        st.line_chart(df4.set_index("month")[["crash_count", "total_injuries", "total_fatalities"]])
-    except FileNotFoundError:
-        pass  
+    st.line_chart(by_hour.set_index("hour_label")["crash_count"])
 
+    trends = run(con, "04_trends.sql", params)
+    st.subheader("Monthly Crash Trends")
+    trends["month"] = pd.to_datetime(trends["month"])
+    st.line_chart(
+        trends.set_index("month")[
+            ["crash_count", "total_injuries", "total_fatalities"]
+        ]
+    )
 
-
-# --------------- Crash Heatmap ---------------
-
+    # ---------------- Crash heatmap ----------------
     st.subheader("Crash Heatmap")
+    points = run(con, "05_map_points.sql", params)
+
+    if points.empty:
+        st.info("No geolocated crashes match the current filters.")
+        return
+
+    if len(points) >= MAP_POINT_LIMIT:
+        st.caption(
+            f"Showing a random {MAP_POINT_LIMIT:,}-point sample of the "
+            f"matching crashes."
+        )
 
     view_state = pdk.ViewState(
         latitude=40.734,
         longitude=-73.9,
-        zoom=9.7,                   # zoom level (lower = zoom out, higher = zoom in)
-        pitch=0                     # tilt angle (0 = top-down view, >0 for perspective)
+        zoom=9.7,   # lower = zoomed out
+        pitch=0,    # 0 = top-down
     )
 
     heat = pdk.Layer(
         "HeatmapLayer",
-        df_filt,
-        
+        points,
         get_position=["longitude", "latitude"],
-        pickable=True,               # enable picking for tooltips
-        radius_pixels=30,     # radius of influence per data point in pixels
-        intensity=1.4,               # heat strength multiplier (higher = hotter)
-        threshold=0.3,               # cutoff for minimum normalized weight to render
-        color_range=[                # color gradient stops [R,G,B,A] with half opacity
-            [0,   0,   0,   0],     
-            [0,   255, 0,   70],    
-            [255, 255, 0,   95],    
-            [255, 0,   0,   130],   
+        pickable=True,
+        radius_pixels=30,   # radius of influence per point
+        intensity=1.4,      # heat strength multiplier
+        threshold=0.3,      # minimum normalized weight to render
+        color_range=[       # gradient stops [R, G, B, A]
+            [0,   0,   0,   0],
+            [0,   255, 0,   70],
+            [255, 255, 0,   95],
+            [255, 0,   0,   130],
         ],
     )
 
+    # Drawn only when there is no Mapbox token to supply a basemap.
     tiles = pdk.Layer(
         "TileLayer",
         data="https://c.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        tile_size=256,              # size of each map tile (standard = 256)
-        opacity=1.0,                # tile layer opacity (0 = transparent, 1 = opaque)
+        tile_size=256,
+        opacity=1.0,
     )
-    
+
+    # Transparent, purely to carry tooltips for the heatmap.
     scatter = pdk.Layer(
         "ScatterplotLayer",
-        df_filt,
+        points,
         get_position=["longitude", "latitude"],
-        get_radius=100,              # pick radius in meters
-        get_fill_color=[0, 0, 0, 0], # fully transparent
-        pickable=True
+        get_radius=100,
+        get_fill_color=[0, 0, 0, 0],
+        pickable=True,
     )
-    tooltip = {
-        "text": "Date: {crash_datetime_str}\nBorough: {borough}",
-        "style": {"backgroundColor": "rgba(0, 0, 0, 0.8)", "color": "white"}
-    }
+
+    layers = [heat, scatter] if BASEMAP else [tiles, heat, scatter]
     st.pydeck_chart(
         pdk.Deck(
-            map_style="mapbox://styles/mapbox/dark-v10",
+            map_style=BASEMAP,
             initial_view_state=view_state,
-            layers=[tiles, heat, scatter],
-            tooltip=tooltip
+            layers=layers,
+            tooltip={
+                "text": "Date: {crash_datetime_str}\nBorough: {borough}",
+                "style": {
+                    "backgroundColor": "rgba(0, 0, 0, 0.8)",
+                    "color": "white",
+                },
+            },
         )
     )
-# ---------------------------------------------
 
     st.subheader("Sample of Filtered Records")
-    st.dataframe(df_filt.head(7))
+    st.dataframe(points.head(7))
+
 
 if __name__ == "__main__":
     main()
