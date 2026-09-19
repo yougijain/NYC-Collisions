@@ -1,0 +1,92 @@
+name: Refresh dataset
+
+# The city republishes collisions in batches with a multi-week reporting lag,
+# so a weekly pull keeps the dashboard as current as the source allows.
+on:
+  schedule:
+    - cron: "17 7 * * 1" # Mondays, 07:17 UTC
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "Rebuild the whole window instead of refreshing the tail"
+        type: boolean
+        default: false
+
+# Required to publish the dataset as a Release asset.
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: data-latest
+  ASSET: data/clean/collisions.parquet
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Fetch the current dataset
+        # Incremental builds need the previous Parquet; a fresh runner has
+        # none, and neither does the very first run. Either way, absence
+        # just means build_dataset.py does a full build.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$RELEASE_TAG" \
+            --pattern collisions.parquet \
+            --dir data/clean \
+            || echo "No published dataset yet; will build from scratch."
+
+      - name: Build dataset
+        env:
+          SOCRATA_APP_TOKEN: ${{ secrets.SOCRATA_APP_TOKEN }}
+        run: |
+          python scripts/build_dataset.py \
+            ${{ (inputs.full && '--full') || '' }}
+
+      - name: Validate
+        # Gate publication on the dataset contract, so a bad upstream day
+        # cannot replace a good published asset.
+        env:
+          NYC_COLLISIONS_DATA: ${{ env.ASSET }}
+        run: pytest tests/ -q
+
+      - name: Summarise
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import os
+          import pandas as pd
+
+          df = pd.read_parquet(os.environ["ASSET"])
+          size_mb = os.path.getsize(os.environ["ASSET"]) / (1024 * 1024)
+          print("### Dataset refreshed\n")
+          print(f"- Rows: {len(df):,}")
+          print(f"- Range: {df.crash_datetime.min()} to {df.crash_datetime.max()}")
+          print(f"- Size: {size_mb:.1f} MB")
+          PY
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || \
+            gh release create "$RELEASE_TAG" \
+              --title "Latest collisions dataset" \
+              --notes "Rebuilt weekly from NYC Open Data (h9gi-nx95) by .github/workflows/refresh-data.yml."
+
+          gh release upload "$RELEASE_TAG" "$ASSET" --clobber
