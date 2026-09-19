@@ -7,6 +7,8 @@ data/raw/nyc_collisions_2020-2025.csv
 data/clean/collisions.parquet
 data/clean/*.db
 .cache/
+# Smoke-test output of scripts/fetch_data.py
+data/raw/nyc_collisions_latest.csv
 
 
 #-----------Generated-------------
