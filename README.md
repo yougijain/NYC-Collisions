@@ -2,54 +2,86 @@
 
 **DEPLOYED LIVE (Note: may take a second to load when prompted):** https://nyc-collisions-2020-2025.streamlit.app/
 
-Learn to ingest data, clean, load to SQLite and make a simple interactive dashboard
+Ingest NYC motor vehicle collision data, clean it, query it with SQL, and serve
+an interactive dashboard. The dataset refreshes itself weekly.
 
 ## Description
 
-This project ingests cleaned and sampled data from a longer NYC motor vehicle collisions dataset into a local SQLite database. It also runs core SQL analysis scripts, validates them using a Jupyter notebook and pytest, and uses Streamlit to dashboard with filters, charts, and a detailed heatmap over New York showing crashes.
+A scheduled GitHub Actions workflow pulls new crashes from the NYC Open Data
+(Socrata) API each week, cleans them, merges them into a Parquet dataset and
+publishes it as a GitHub Release asset. The Streamlit dashboard queries that
+Parquet with DuckDB and renders filters, charts and a heatmap over New York.
 
-## Project Metrics
+Coverage is January 2020 to the present, and grows on its own.
 
-### Dataset Scale
-- **27,164 collision records** processed and analyzed
-- **5+ years of temporal data** (January 2020 - May 2025)
-- **13,508 total injuries** tracked across all incidents
-- **64 fatalities** documented and analyzed
-- **10,174 crashes with injuries/fatalities** (37.5% of dataset)
-- **5 NYC boroughs** with comprehensive geographic analysis
-- **Average 1.33 injuries per crash** (where injuries occurred)
+## How it works
 
-### Technical Achievements
-- **100% automated ETL pipeline** (CSV → cleaned data → SQLite database)
-- **4 SQL analysis queries** (filtering, aggregation, time-series, trends)
-- **Interactive Streamlit dashboard** with real-time filtering, visualizations, and heatmap
-- **Automated testing suite** with pytest for data validation
-- **Data quality validation** (98.3-100% sparsity detection, zero NULL datetime values)
-- **Live deployment** on Streamlit Cloud with public access
+```
+NYC Open Data (h9gi-nx95)
+        |  scripts/fetch_data.py      paginated SoQL, $order=collision_id
+        v
+   raw records
+        |  scripts/clean.py           normalise, type, mask bad coords
+        v
+   cleaned rows
+        |  scripts/build_dataset.py   merge + dedupe on collision_id
+        v
+  collisions.parquet  --->  GitHub Release asset (tag: data-latest)
+        |
+        |  app/db.py                  DuckDB view over the Parquet
+        v
+  sql/*.sql  --->  app/dashboard.py   Streamlit
+```
 
-### Data Processing
-- Column normalization: Automated snake_case conversion
-- Data type optimization: Date/time merging, integer casting
-- Feature engineering: Removed 4 sparse columns (>98% null)
-- Geographic data: Latitude/longitude coordinates for interactive mapping
+Refreshes are incremental. Each run re-requests a 30-day overlap window
+rather than resuming at the newest row held, because NYC back-fills
+late-reported crashes and amends published ones. De-duplicating on
+`collision_id` makes that overlap idempotent and lets amendments win.
+
+The dashboard resolves its data in order: `$NYC_COLLISIONS_DATA`, a local
+build at `data/clean/collisions.parquet`, the published Release asset cached
+under `.cache/`, then the committed seed at
+`data/clean/collisions_seed.parquet`. A failed download falls back to the
+stale cache or the seed, so a bad refresh degrades instead of breaking the
+deployed app.
+
+### Why Parquet on a Release rather than a database in the repo
+
+A 2020-present SQLite build runs to roughly 110 MB, past GitHub's 100 MB
+file limit, and committing it weekly would add a multi-megabyte binary diff
+every run. zstd Parquet stores the same rows at about a fifth the size, and
+a Release asset keeps the data out of git history entirely.
+
+## Technical notes
+
+- **Ingest**: Socrata caps responses at 50,000 rows, so larger slices are
+  walked with `$limit`/`$offset` under `$order=collision_id`. Offset paging
+  without a total order silently drops and repeats rows.
+- **Queries**: the date and borough filters are bound as DuckDB named
+  parameters and pushed into every query, so aggregates are computed in SQL
+  rather than by loading the table into pandas.
+- **Heatmap**: capped and sampled by `hash(collision_id)`, which is uniform
+  and deterministic, so the map does not shimmer on every rerun.
+- **Coordinates**: the source encodes unknown positions as `0.0`; these are
+  masked to NULL rather than plotted in the Gulf of Guinea.
 
 ## Getting Started
 
 ### Dependencies
 
-* Python 3.8 or higher  
-* `pip` package manager  
-* Virtual environment tool (e.g. `venv` or `conda`)  
+* Python 3.9 or higher
+* `pip` package manager
+* Virtual environment tool (e.g. `venv` or `conda`)
 * OS: any (tested on Windows 10, macOS, Linux)
 
 ### Installing
 
-1. **Clone the repo**  
+1. **Clone the repo**
 ```bash
-git clone https://github.com/yougijain/ds-fundamentals-ingest-clean
-cd ds-fundamentals-ingest-clean
+git clone https://github.com/yougijain/NYC-Collisions
+cd NYC-Collisions
 ```
-2. **Create & activate a virtualenv**  
+2. **Create & activate a virtualenv**
 ```bash
 python -m venv .venv
 # Windows
@@ -57,7 +89,7 @@ python -m venv .venv
 # macOS/Linux
 source .venv/bin/activate
 ```
-3. **Install Python dependencies**  
+3. **Install Python dependencies**
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
@@ -65,40 +97,53 @@ pip install -r requirements.txt
 
 ### Executing program
 
-1. **Load the data into SQLite**
-
-```bash
-python scripts/load_to_sqlite.py
-```
-
-2. **Validate SQL scripts in notebook**
-
-* Open `notebooks/sql_queries.ipynb` in VS Code or Jupyter and run all cells.
-
-3. **Run automated tests**
-
-```bash
-pytest -q
-```
-
-4. **Generate data quality report** (optional)
-
-```bash
-python scripts/data_quality_report.py
-```
-
-5. **Launch the dashboard**
+The repo ships with a seed dataset, so the dashboard runs immediately:
 
 ```bash
 streamlit run app/dashboard.py
 ```
 
+To build the full dataset locally instead of using the published one:
+
+```bash
+python scripts/build_dataset.py --full     # 2020-present, ~10 minutes
+python scripts/build_dataset.py            # refresh only recent crashes
+```
+
+Other tasks:
+
+```bash
+pytest -q                                  # test suite, no network needed
+python scripts/data_quality_report.py      # completeness + validation report
+```
+
+Open `notebooks/cleaning.ipynb` or `notebooks/sql_queries.ipynb` to explore
+the cleaning steps and validate each SQL script.
+
+### Configuration
+
+| Variable | Where | Purpose |
+|---|---|---|
+| `SOCRATA_APP_TOKEN` | GitHub repository secret | Lifts Socrata's anonymous rate limit. Optional; the fetch works without it but is throttled harder. |
+| `MAPBOX_API_KEY` | `.streamlit/secrets.toml` or env | Dark Mapbox basemap. Optional; OpenStreetMap tiles are used otherwise. |
+| `NYC_COLLISIONS_DATA` | env | Point the app at a specific Parquet path or URL. |
+
+### Scheduled refresh
+
+`.github/workflows/refresh-data.yml` runs every Monday at 07:17 UTC, and can
+be triggered manually with a full-rebuild toggle. It downloads the current
+asset, builds incrementally, runs the test suite against the result, and
+publishes only if those tests pass, so a bad upstream day cannot replace a
+good dataset. It needs no secrets beyond the automatic `GITHUB_TOKEN`.
+
 ## Help
 
-* If you get a “unable to open database file” error, confirm you ran the loader script and that data/clean/data.db exists.
-
-* To use the Mapbox dark basemap, copy .streamlit/secrets.toml.example → .streamlit/secrets.toml and insert your MAPBOX_API_KEY.
-
+* **"No dataset available"** — run `python scripts/build_dataset.py --full`,
+  or set `NYC_COLLISIONS_DATA` to a Parquet path or URL.
+* **The dashboard shows old data** — the app caches the Release asset for six
+  hours. Delete `.cache/` to force a re-download.
+* **Socrata returns 429** — you are being throttled. Set `SOCRATA_APP_TOKEN`;
+  tokens are free from the NYC Open Data portal.
 * For other issues, open an issue on the GitHub repo.
 
 ## Authors
