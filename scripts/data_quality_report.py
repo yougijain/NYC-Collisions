@@ -1,119 +1,125 @@
-import sqlite3
-import pandas as pd
+"""Generate a data quality report for the published collisions dataset.
+
+Reads whatever app/db.py resolves (a local build, the Release asset, or the
+committed seed) and writes data/clean/data_quality_report.txt.
+"""
+
+import sys
 from pathlib import Path
 
-DB_PATH = Path("data/clean/data.db")
-OUTPUT_PATH = Path("data/clean/data_quality_report.txt")
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "app"))
 
-def generate_quality_report():
-    """Generate comprehensive data quality report"""
-    
-    conn = sqlite3.connect(DB_PATH)
-    
-    #  table info
-    df = pd.read_sql_query("SELECT * FROM collisions_clean LIMIT 1", conn)
-    total_rows = pd.read_sql_query("SELECT COUNT(*) as count FROM collisions_clean", conn).iloc[0]['count']
-    
-    report_lines = []
-    report_lines.append("=" * 60)
-    report_lines.append("NYC COLLISIONS DATA QUALITY REPORT")
-    report_lines.append("=" * 60)
-    report_lines.append(f"\nTotal Records: {total_rows:,}")
-    report_lines.append(f"Total Columns: {len(df.columns)}")
-    report_lines.append("\n" + "-" * 60)
-    report_lines.append("COLUMN-LEVEL METRICS")
-    report_lines.append("-" * 60)
-    
-    # Column-level analysis
-    for col in df.columns:
-        query = f"""
-        SELECT 
-            COUNT(*) as total_rows,
-            COUNT({col}) as non_null_count,
-            COUNT(*) - COUNT({col}) as null_count,
-            ROUND(100.0 * COUNT({col}) / COUNT(*), 2) as completeness_pct
-        FROM collisions_clean
-        """
-        result = pd.read_sql_query(query, conn).iloc[0]
-        
-        completeness = result['completeness_pct']
-        null_count = result['null_count']
-        
-        status = "[OK]" if completeness >= 95 else "[WARN]" if completeness >= 80 else "[FAIL]"
-        
-        report_lines.append(f"\n{status} {col}")
-        report_lines.append(f"   Completeness: {completeness}% ({result['non_null_count']:,} non-null, {null_count:,} null)")
-    
-    report_lines.append("\n" + "-" * 60)
-    report_lines.append("DATA VALIDATION CHECKS")
-    report_lines.append("-" * 60)
-    
-    null_datetime = pd.read_sql_query(
-        "SELECT COUNT(*) as count FROM collisions_clean WHERE crash_datetime IS NULL", 
-        conn
-    ).iloc[0]['count']
-    report_lines.append(f"\n[OK] Crash DateTime NULL Check: {null_datetime} NULL values (Expected: 0)")
-    
-    # range validity
-    date_range = pd.read_sql_query(
-        "SELECT MIN(crash_datetime) as min_date, MAX(crash_datetime) as max_date FROM collisions_clean",
-        conn
-    ).iloc[0]
-    report_lines.append(f"[OK] Date Range: {date_range['min_date']} to {date_range['max_date']}")
-    
-    # negative injury counts
-    negative_injuries = pd.read_sql_query(
-        "SELECT COUNT(*) as count FROM collisions_clean WHERE number_of_persons_injured < 0",
-        conn
-    ).iloc[0]['count']
-    report_lines.append(f"[OK] Negative Injury Counts: {negative_injuries} (Expected: 0)")
-    
-    geo_complete = pd.read_sql_query(
-        "SELECT COUNT(*) as count FROM collisions_clean WHERE latitude IS NOT NULL AND longitude IS NOT NULL",
-        conn
-    ).iloc[0]['count']
-    geo_pct = round(100.0 * geo_complete / total_rows, 2)
-    report_lines.append(f"[OK] Geographic Data: {geo_pct}% complete ({geo_complete:,} records with lat/long)")
-    
-    report_lines.append("\n" + "-" * 60)
-    report_lines.append("SUMMARY STATISTICS")
-    report_lines.append("-" * 60)
-    
-    stats = pd.read_sql_query("""
-        SELECT 
-            SUM(number_of_persons_injured) as total_injuries,
-            SUM(number_of_persons_killed) as total_fatalities,
-            AVG(number_of_persons_injured) as avg_injuries,
-            COUNT(DISTINCT borough) as unique_boroughs
-        FROM collisions_clean
-    """, conn).iloc[0]
-    
-    report_lines.append(f"\nTotal Injuries: {int(stats['total_injuries']):,}")
-    report_lines.append(f"Total Fatalities: {int(stats['total_fatalities']):,}")
-    report_lines.append(f"Average Injuries per Crash: {stats['avg_injuries']:.2f}")
-    report_lines.append(f"Unique Boroughs: {int(stats['unique_boroughs'])}")
-    
-    # Data quality score
-    high_quality_cols = sum(1 for col in df.columns 
-                           if pd.read_sql_query(
-                               f"SELECT ROUND(100.0 * COUNT({col}) / COUNT(*), 2) as pct FROM collisions_clean",
-                               conn
-                           ).iloc[0]['pct'] >= 95)
-    
-    quality_score = round(100.0 * high_quality_cols / len(df.columns), 1)
-    report_lines.append("\n" + "-" * 60)
-    report_lines.append(f"OVERALL DATA QUALITY SCORE: {quality_score}%")
-    report_lines.append(f"({high_quality_cols}/{len(df.columns)} columns with >=95% completeness)")
-    report_lines.append("=" * 60)
-    
-    conn.close()
-    
-    report_text = "\n".join(report_lines)
+import db  # noqa: E402
+
+OUTPUT_PATH = ROOT / "data" / "clean" / "data_quality_report.txt"
+
+# Thresholds for the per-column completeness verdict.
+OK_THRESHOLD = 95.0
+WARN_THRESHOLD = 80.0
+
+
+def generate_quality_report() -> str:
+    """Build the report text and write it to disk."""
+    connection = db.connect()
+    columns = connection.execute(
+        f"SELECT * FROM {db.TABLE_NAME} LIMIT 0"
+    ).df().columns.tolist()
+
+    # One pass for every column's completeness, rather than a query each.
+    completeness_sql = ", ".join(
+        f'ROUND(100.0 * COUNT("{col}") / COUNT(*), 2) AS "{col}"'
+        for col in columns
+    )
+    completeness = connection.execute(
+        f"SELECT {completeness_sql} FROM {db.TABLE_NAME}"
+    ).df().iloc[0]
+
+    totals = connection.execute(f"""
+        SELECT
+            COUNT(*)                                   AS total_rows,
+            MIN(crash_datetime)                        AS min_date,
+            MAX(crash_datetime)                        AS max_date,
+            COUNT(*) FILTER (WHERE crash_datetime IS NULL)    AS null_datetime,
+            COUNT(*) FILTER (WHERE number_of_persons_injured < 0
+                                OR number_of_persons_killed  < 0) AS negative_counts,
+            COUNT(*) FILTER (WHERE latitude IS NOT NULL
+                               AND longitude IS NOT NULL)     AS geo_complete,
+            SUM(number_of_persons_injured)             AS total_injuries,
+            SUM(number_of_persons_killed)              AS total_fatalities,
+            AVG(number_of_persons_injured)             AS avg_injuries,
+            COUNT(DISTINCT borough)                    AS unique_boroughs,
+            COUNT(*) - COUNT(DISTINCT collision_id)    AS duplicate_ids
+        FROM {db.TABLE_NAME}
+    """).df().iloc[0]
+
+    total_rows = int(totals["total_rows"])
+    lines = [
+        "=" * 60,
+        "NYC COLLISIONS DATA QUALITY REPORT",
+        "=" * 60,
+        f"\nTotal Records: {total_rows:,}",
+        f"Total Columns: {len(columns)}",
+        "\n" + "-" * 60,
+        "COLUMN-LEVEL METRICS",
+        "-" * 60,
+    ]
+
+    high_quality = 0
+    for col in columns:
+        pct = float(completeness[col])
+        if pct >= OK_THRESHOLD:
+            status = "[OK]"
+            high_quality += 1
+        elif pct >= WARN_THRESHOLD:
+            status = "[WARN]"
+        else:
+            status = "[FAIL]"
+
+        non_null = round(total_rows * pct / 100)
+        lines.append(f"\n{status} {col}")
+        lines.append(
+            f"   Completeness: {pct}% ({non_null:,} non-null, "
+            f"{total_rows - non_null:,} null)"
+        )
+
+    geo_pct = round(100.0 * int(totals["geo_complete"]) / total_rows, 2)
+    lines += [
+        "\n" + "-" * 60,
+        "DATA VALIDATION CHECKS",
+        "-" * 60,
+        f"\n[OK] Crash DateTime NULL Check: {int(totals['null_datetime'])} "
+        f"NULL values (Expected: 0)",
+        f"[OK] Duplicate Collision IDs: {int(totals['duplicate_ids'])} (Expected: 0)",
+        f"[OK] Date Range: {totals['min_date']} to {totals['max_date']}",
+        f"[OK] Negative Injury Counts: {int(totals['negative_counts'])} (Expected: 0)",
+        f"[OK] Geographic Data: {geo_pct}% complete "
+        f"({int(totals['geo_complete']):,} records with lat/long)",
+        "\n" + "-" * 60,
+        "SUMMARY STATISTICS",
+        "-" * 60,
+        f"\nTotal Injuries: {int(totals['total_injuries']):,}",
+        f"Total Fatalities: {int(totals['total_fatalities']):,}",
+        f"Average Injuries per Crash: {float(totals['avg_injuries']):.2f}",
+        f"Unique Boroughs: {int(totals['unique_boroughs'])}",
+    ]
+
+    score = round(100.0 * high_quality / len(columns), 1)
+    lines += [
+        "\n" + "-" * 60,
+        f"OVERALL DATA QUALITY SCORE: {score}%",
+        f"({high_quality}/{len(columns)} columns with >={OK_THRESHOLD:.0f}% completeness)",
+        "=" * 60,
+    ]
+
+    connection.close()
+
+    report = "\n".join(lines)
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(report_text, encoding='utf-8')
-    
-    print(report_text)
-    print(f"\n[OK] Report saved to: {OUTPUT_PATH}")
+    OUTPUT_PATH.write_text(report, encoding="utf-8")
+    return report
+
 
 if __name__ == "__main__":
-    generate_quality_report()
+    print(generate_quality_report())
+    print(f"\n[OK] Report saved to: {OUTPUT_PATH}")
