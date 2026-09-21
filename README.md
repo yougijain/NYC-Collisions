@@ -1,9 +1,10 @@
-# NYC Collisions Mini-Project
+# NYC Collisions: injury risk model and self-refreshing pipeline
 
 **DEPLOYED LIVE (Note: may take a second to load when prompted):** https://nyc-collisions-2020-2025.streamlit.app/
 
-Ingest NYC motor vehicle collision data, clean it, query it with SQL, and serve
-an interactive dashboard. The dataset refreshes itself weekly.
+Ingest NYC motor vehicle collision data, clean it, query it with SQL, model
+which crashes hurt people, and serve it all through an interactive dashboard.
+The dataset refreshes itself weekly.
 
 ## Description
 
@@ -35,10 +36,11 @@ NYC Open Data (h9gi-nx95)
         |  scripts/build_dataset.py   merge + dedupe on collision_id
         v
   collisions.parquet  --->  GitHub Release asset (tag: data-latest)
-        |
-        |  app/db.py                  DuckDB view over the Parquet
-        v
-  sql/*.sql  --->  app/dashboard.py   Streamlit
+        |                                   |
+        |  app/db.py    DuckDB view         |  models/injury_risk.py
+        v                                   v
+  sql/*.sql  --->  app/dashboard.py   scripts/train_injury_risk.py
+                     Streamlit          reports/injury_risk/
 ```
 
 Refreshes are incremental. Each run re-requests a 30-day overlap window
@@ -59,6 +61,54 @@ A 2020-present SQLite build runs to roughly 110 MB, past GitHub's 100 MB
 file limit, and committing it weekly would add a multi-megabyte binary diff
 every run. zstd Parquet stores the same rows at about a fifth the size, and
 a Release asset keeps the data out of git history entirely.
+
+## The model
+
+**Given a crash, what is the probability it injured someone.** Not a forecast:
+every feature is something written down after the fact, so the model scores a
+crash that has already happened and asks whether that combination of
+circumstances usually hurts people.
+
+Measured on 121,970 crashes from 2025 onward, which neither the model nor its
+calibration saw:
+
+| Predictor | ROC-AUC | Brier | Brier skill |
+|---|---|---|---|
+| Borough × hour base rate | 0.5491 | 0.2475 | — |
+| Gradient boosting | **0.7943** | **0.1812** | **+26.8%** |
+
+The baseline is there because it is what anyone can produce in one SQL query.
+That it reaches only 0.549 is itself the finding: *when* and *which borough*
+say almost nothing about whether a crash hurt someone. What was hit does —
+shuffling the second vehicle costs more test AUC than borough, hour, weekday,
+month and vehicle count combined.
+
+Design decisions, in short:
+
+- **Split by time, in three folds.** Train on 2020–2023, calibrate on 2024,
+  test on 2025 onward. A random split would leak: the share of reported
+  crashes that injured someone climbed from 0.296 in 2020 to 0.440 in 2024,
+  mostly because fewer property-damage-only crashes are being reported.
+- **Calibrate the level.** That drift leaves an uncalibrated model predicting
+  0.366 for a period that ran at 0.432. A single log-odds shift fitted on 2024
+  closes it, taking Brier from 0.1862 to 0.1812 and leaving ROC-AUC untouched.
+  Platt and isotonic were tried and bought 0.0001.
+- **Brier over ROC-AUC.** The watchlist subtracts predicted rates from
+  observed ones, so the probabilities have to be right and not merely ordered
+  right.
+- **No location features.** No coordinates, no street names. The watchlist
+  measures how far a site sits from what its crash mix predicts; let the model
+  see the site and that gap goes to zero. Tests enforce it.
+
+Full write-up, including what it does not prove, in
+[`docs/model_card.md`](docs/model_card.md). Generated results, including the
+calibration curve and permutation importances, in
+[`reports/injury_risk/results.md`](reports/injury_risk/results.md).
+
+```bash
+pip install -r requirements-ml.txt
+python scripts/train_injury_risk.py
+```
 
 ## Technical notes
 
@@ -94,6 +144,9 @@ a Release asset keeps the data out of git history entirely.
 
 * Python 3.9 or higher
 * `pip` package manager
+* `requirements.txt` runs the dashboard and the pipeline; `requirements-ml.txt`
+  adds scikit-learn and matplotlib for training. The deployed app needs only
+  the first.
 * Virtual environment tool (e.g. `venv` or `conda`)
 * OS: any (tested on Windows 10, macOS, Linux)
 
@@ -140,6 +193,7 @@ pytest -q                                  # test suite, no network needed
 python scripts/data_quality_report.py      # completeness + validation report
 python scripts/dataset_facts.py            # headline figures for this build
 python scripts/build_seed.py               # re-cut the committed fallback
+python scripts/train_injury_risk.py        # retrain, re-measure, redraw
 ```
 
 `pytest` runs against the committed seed unless `NYC_COLLISIONS_DATA` points
@@ -156,7 +210,7 @@ the cleaning steps and validate each SQL script.
 |---|---|---|
 | `SOCRATA_APP_TOKEN` | GitHub repository secret | Lifts Socrata's anonymous rate limit. Optional; the fetch works without it but is throttled harder. |
 | `MAPBOX_API_KEY` | `.streamlit/secrets.toml` or env | Dark Mapbox basemap. Optional; OpenStreetMap tiles are used otherwise. |
-| `NYC_COLLISIONS_DATA` | env | Point the app at a specific Parquet path or URL. |
+| `NYC_COLLISIONS_DATA` | env | Point the app, the tests or the trainer at a specific Parquet path or URL. |
 
 ### Scheduled refresh
 
