@@ -193,3 +193,7 @@ cython_debug/
 # Fitted models. Regenerate with scripts/train_injury_risk.py; the metrics
 # and the plot under reports/ are the part worth reviewing.
 models/artifacts/
+
+# Fetched from NYC DOT and published as a Release asset, like the
+# collisions build. Not committed.
+data/clean/traffic_volume.parquet

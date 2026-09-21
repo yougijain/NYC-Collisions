@@ -7,21 +7,23 @@ import pytest
 
 import build_dataset
 import fetch_data
+import socrata
 from fetch_data import build_where, fetch_collisions
 
 
 @pytest.fixture
 def fake_api():
     """Serve `total` synthetic rows, honouring $limit and $offset."""
-    state = {"total": 0, "calls": []}
+    state = {"total": 0, "calls": [], "urls": []}
 
-    def handler(session, params):
+    def handler(session, params, url):
         state["calls"].append(params)
+        state["urls"].append(url)
         offset, limit = params["$offset"], params["$limit"]
         count = max(0, min(limit, state["total"] - offset))
         return [{"collision_id": str(offset + i)} for i in range(count)]
 
-    with patch.object(fetch_data, "_get_with_retry", handler):
+    with patch.object(socrata, "get_with_retry", handler):
         yield state
 
 
@@ -60,7 +62,7 @@ def test_max_rows_caps_the_result(fake_api):
 def test_page_size_is_capped_at_the_socrata_limit(fake_api):
     fake_api["total"] = 10
     fetch_collisions(page_size=999_999)
-    assert fake_api["calls"][0]["$limit"] == fetch_data.MAX_PAGE_SIZE
+    assert fake_api["calls"][0]["$limit"] == socrata.MAX_PAGE_SIZE
 
 
 def test_requests_carry_a_deterministic_order(fake_api):
@@ -68,6 +70,7 @@ def test_requests_carry_a_deterministic_order(fake_api):
     fake_api["total"] = 10
     fetch_collisions()
     assert all(call["$order"] == fetch_data.PAGE_ORDER for call in fake_api["calls"])
+    assert all(url.endswith(f"{fetch_data.DATASET_ID}.json") for url in fake_api["urls"])
 
 
 def test_empty_result_set_is_an_empty_frame(fake_api):
