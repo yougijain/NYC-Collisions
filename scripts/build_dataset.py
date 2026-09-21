@@ -17,15 +17,17 @@ Usage:
 import argparse
 import logging
 import sys
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from clean import CANONICAL_COLUMNS, clean  # noqa: E402
+from clean import DATASET_VERSION, clean  # noqa: E402
 from fetch_data import fetch_collisions  # noqa: E402
 
 logging.basicConfig(
@@ -40,11 +42,45 @@ DEFAULT_OUTPUT = Path("data/clean/collisions.parquet")
 DEFAULT_OVERLAP_DAYS = 30
 COMPRESSION = "zstd"
 
+# Parquet key-value metadata stamped on every build.
+VERSION_KEY = b"dataset_version"
+BUILT_AT_KEY = b"built_at"
+
+
+def stamped_version(path: Path) -> int:
+    """Read the cleaning semantics a Parquet file was built under.
+
+    Returns:
+        The stamped DATASET_VERSION, or 0 for a file written before the stamp
+        existed or one whose metadata cannot be read.
+    """
+    try:
+        metadata = pq.read_schema(path).metadata or {}
+        return int(metadata.get(VERSION_KEY, 0))
+    except (OSError, ValueError, pa.ArrowInvalid) as exc:
+        logger.warning(f"Could not read the version stamp on {path}: {exc}")
+        return 0
+
 
 def read_existing(path: Path) -> Optional[pd.DataFrame]:
-    """Load the current dataset, or None if it is absent or unreadable."""
+    """Load the current dataset, or None if it cannot be built on.
+
+    A file written under older cleaning semantics is rejected rather than
+    merged into: its rows would disagree with the ones about to be cleaned,
+    and de-duplicating on collision_id would leave the two mixed together.
+    Returning None makes the caller fall back to a full rebuild.
+    """
     if not path.exists():
         return None
+
+    held = stamped_version(path)
+    if held < DATASET_VERSION:
+        logger.warning(
+            f"{path} was built under dataset version {held}, but this revision "
+            f"produces version {DATASET_VERSION}; rebuilding in full"
+        )
+        return None
+
     try:
         df = pd.read_parquet(path)
         logger.info(f"Existing dataset: {len(df):,} rows at {path}")
@@ -68,14 +104,23 @@ def merge(existing: Optional[pd.DataFrame], incoming: pd.DataFrame) -> pd.DataFr
 
 
 def write(df: pd.DataFrame, path: Path) -> None:
-    """Write the dataset to Parquet and log a summary."""
+    """Write the dataset to Parquet, stamped with its build provenance."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(path, index=False, compression=COMPRESSION)
+
+    table = pa.Table.from_pandas(df, preserve_index=False)
+    # Stamping the cleaning semantics into the file is what lets a later run
+    # tell whether it may merge into this dataset or has to rebuild it.
+    table = table.replace_schema_metadata({
+        **(table.schema.metadata or {}),
+        VERSION_KEY: str(DATASET_VERSION).encode(),
+        BUILT_AT_KEY: datetime.now(timezone.utc).isoformat().encode(),
+    })
+    pq.write_table(table, path, compression=COMPRESSION)
 
     size_mb = path.stat().st_size / (1024 * 1024)
     logger.info(
         f"Wrote {path}: {len(df):,} rows, {len(df.columns)} columns, "
-        f"{size_mb:.1f} MB ({COMPRESSION})"
+        f"{size_mb:.1f} MB ({COMPRESSION}, dataset version {DATASET_VERSION})"
     )
     logger.info(
         f"Date range: {df['crash_datetime'].min()} to {df['crash_datetime'].max()}"
