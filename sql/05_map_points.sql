@@ -8,7 +8,7 @@
 SELECT
   latitude,
   longitude,
-  COALESCE(borough, 'UNKNOWN')                       AS borough,
+  COALESCE(borough_resolved, 'UNKNOWN')                       AS borough,
   strftime(crash_datetime, '%Y-%m-%d %H:%M:%S')      AS crash_datetime_str,
   number_of_persons_injured,
   number_of_persons_killed
@@ -20,6 +20,6 @@ WHERE (number_of_persons_injured     > 0
   AND longitude IS NOT NULL
   AND crash_datetime >= $start_date
   AND crash_datetime <  $end_date
-  AND list_contains($boroughs, COALESCE(borough, 'UNKNOWN'))
+  AND list_contains($boroughs, COALESCE(borough_resolved, 'UNKNOWN'))
 ORDER BY hash(collision_id)
 LIMIT $row_limit;
