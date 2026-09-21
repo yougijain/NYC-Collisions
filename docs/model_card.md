@@ -176,14 +176,51 @@ that carry one.
 statement about what co-occurs in crash reports. It is not an estimate of
 what would happen if speeds fell.
 
+## The watchlist built on it
+
+`models/watchlist.py` turns per-crash scores into ranked intersections. Three
+decisions there are worth repeating here, because they are what make the
+ranking mean anything.
+
+**Sites are scored out of sample, rolling forward.** Scoring a crash with a
+model that trained on it shrinks its residual, and the residual is the whole
+product. Each year is scored by a model trained on everything before the
+previous year and calibrated on the previous one — five fits for 2022 through
+2026. 2020 and 2021 go unscored, which costs little, since they sit in a
+different reporting regime anyway.
+
+**The excess is centred.** A site's excess is its observed injury rate minus
+its mean predicted rate, with the city-wide mean subtracted so the whole
+scored population nets to zero. That turns it into a comparison between sites
+rather than a claim about absolute risk, and it absorbs whatever level bias
+the model has left.
+
+**The ranking is a lower bound.** A site with 25 crashes and a 30-point excess
+is a weaker finding than one with 400 crashes and 15 points, so sites are
+ordered by the conservative end of a 95% interval rather than by the estimate,
+on top of a hard minimum of 25 crashes. `excess_z` is published alongside so a
+reader can see the arithmetic: 55 of 544 sites clear z = 1.96, against roughly
+14 expected by chance at that many comparisons. The head of the list is
+signal; the tail is a screening queue, not a verdict.
+
+Current build: 544 sites over 413,780 scored crashes, 2022-01-01 to
+2026-06-11. Regenerate with `python scripts/build_watchlist.py`.
+
 ## Reproducing
 
 ```bash
 pip install -r requirements-ml.txt
 python scripts/build_dataset.py --full     # or set NYC_COLLISIONS_DATA
 python scripts/train_injury_risk.py
+python scripts/build_watchlist.py
 ```
 
-Writes `reports/injury_risk/{metrics.json,results.md,calibration.png}` and
-`models/artifacts/injury_risk.joblib`. Seeded throughout; the same dataset
-gives the same numbers.
+Writes `reports/injury_risk/{metrics.json,results.md,calibration.png}`,
+`models/artifacts/injury_risk.joblib`, and the three committed watchlist files
+under `data/clean/`. Seeded throughout; the same dataset gives the same
+numbers. Each generated file records the dataset version and build timestamp
+it came from, so a figure quoted anywhere can be traced to one build.
+
+The weekly refresh reruns all of it against the newly published dataset and
+commits the result, so the numbers in this card go stale as a diff rather than
+in silence.

@@ -38,9 +38,17 @@ NYC Open Data (h9gi-nx95)
   collisions.parquet  --->  GitHub Release asset (tag: data-latest)
         |                                   |
         |  app/db.py    DuckDB view         |  models/injury_risk.py
-        v                                   v
-  sql/*.sql  --->  app/dashboard.py   scripts/train_injury_risk.py
-                     Streamlit          reports/injury_risk/
+        |                                   v
+        |                            scripts/train_injury_risk.py
+        |                              reports/injury_risk/
+        |                                   |
+        |                                   |  models/watchlist.py
+        |                                   v
+        |                            scripts/build_watchlist.py
+        |                              injury_watchlist.csv
+        v                                   |
+  sql/*.sql  ------>  app/dashboard.py  <---+
+                          Streamlit
 ```
 
 Refreshes are incremental. Each run re-requests a 30-day overlap window
@@ -101,14 +109,75 @@ Design decisions, in short:
   see the site and that gap goes to zero. Tests enforce it.
 
 Full write-up, including what it does not prove, in
-[`docs/model_card.md`](docs/model_card.md). Generated results, including the
-calibration curve and permutation importances, in
-[`reports/injury_risk/results.md`](reports/injury_risk/results.md).
+[`docs/model_card.md`](docs/model_card.md). The figures above describe one
+build; the generated results, including the calibration curve and permutation
+importances, are regenerated weekly in
+[`reports/injury_risk/results.md`](reports/injury_risk/results.md) and are
+what to quote.
 
 ```bash
 pip install -r requirements-ml.txt
 python scripts/train_injury_risk.py
 ```
+
+## The watchlist
+
+A model that only produces an AUC is a model nobody uses. The dashboard's
+second tab turns it into a list of intersections, ranked by one claim:
+
+> at this intersection, more crashes injured someone than the crashes
+> themselves account for
+
+**544 intersections** with at least 25 crashes between 2022 and 2026 qualify,
+over 413,780 scored crashes. The worst sits **35 points** above what its crash
+mix predicts; the top decile sits 14 points above. 55 clear z = 1.96, against
+roughly 14 expected from chance across that many sites — so the head of the
+list is signal and the tail is a screening queue, not a verdict.
+
+| Intersection | Borough | Crashes | Injured | Expected | Excess |
+|---|---|---|---|---|---|
+| Avenue U @ Gerritsen Avenue | Brooklyn | 26 | 88.5% | 51.5% | +35.0 pts |
+| Church Avenue @ Flatbush Avenue | Brooklyn | 31 | 83.9% | 54.3% | +27.6 pts |
+| Atlantic Avenue @ Crescent Street | Brooklyn | 30 | 73.3% | 44.5% | +26.9 pts |
+| Cross Bronx Expressway @ Randall Avenue | Bronx | 28 | 71.4% | 41.7% | +27.8 pts |
+
+Three things make that number mean something:
+
+- **Sites are keyed direction-free.** "A and B" and "B and A" are one
+  junction, which merges 94,433 apparent sites into 63,132 real ones.
+- **Every score is out of sample.** Scoring a crash with a model that trained
+  on it shrinks its residual, and the residual is the entire product. Each
+  year is scored by a model trained on everything before the previous year
+  and calibrated on the previous one.
+- **The ranking is by a lower bound, not the estimate.** A site with 25
+  crashes and a 30-point excess is a weaker finding than one with 400 crashes
+  and 15, and the ordering says so.
+
+The same scoring produces the factor table, which is the part a non-technical
+reader repeats back: crashes where the officer wrote *Failure to Yield
+Right-of-Way* injure someone 68.7% of the time, against 13.3% for *Passing Too
+Closely*. Predicted and observed track within a couple of points across all 31
+factors, which is the calibration check worth trusting most.
+
+```bash
+python scripts/build_watchlist.py   # rewrites the three committed CSVs
+```
+
+### What it does not prove
+
+**There is no exposure denominator.** This dataset has crashes but no traffic
+counts, so a junction with many crashes may simply be a junction with many
+vehicles. Every rate here is per *crash*, never per vehicle passing through,
+and nothing on the list is a claim that an intersection is dangerous in the
+ordinary sense. NYC DOT publishes automated traffic volume counts on the same
+open data portal; joining them is what would turn crashes-per-crash into
+crashes-per-million-vehicles, which is the number a traffic engineer actually
+wants.
+
+The model card lists the rest: the features are an officer's judgement
+recorded after the fact, a quarter of contributing factors say "Unspecified",
+reported crashes are not all crashes and the gap between them moves, and
+nothing here is causal.
 
 ## Technical notes
 
@@ -194,6 +263,7 @@ python scripts/data_quality_report.py      # completeness + validation report
 python scripts/dataset_facts.py            # headline figures for this build
 python scripts/build_seed.py               # re-cut the committed fallback
 python scripts/train_injury_risk.py        # retrain, re-measure, redraw
+python scripts/build_watchlist.py          # rescore and rank intersections
 ```
 
 `pytest` runs against the committed seed unless `NYC_COLLISIONS_DATA` points
@@ -218,8 +288,9 @@ the cleaning steps and validate each SQL script.
 be triggered manually with a full-rebuild toggle. It downloads the current
 asset, builds incrementally, runs the test suite against the result, and
 publishes only if those tests pass, so a bad upstream day cannot replace a
-good dataset. It then regenerates the figures above and commits them. It needs
-no secrets beyond the automatic `GITHUB_TOKEN`.
+good dataset. It then regenerates the figures above, retrains the model and rescores the
+watchlist, and commits all of it. It needs no secrets beyond the automatic
+`GITHUB_TOKEN`.
 
 The committed seed is not regenerated weekly; a megabyte of binary churn every
 Monday is not worth it. Re-cut it with `python scripts/build_seed.py` when the

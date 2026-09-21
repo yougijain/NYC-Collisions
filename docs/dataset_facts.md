@@ -19,4 +19,4 @@ describe the same build.
 | Build timestamp | 2026-09-21T00:56:21.115262+00:00 |
 
 Source: [NYC Open Data - Motor Vehicle Collisions: Crashes (h9gi-nx95)](https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95).
-Generated 2026-09-21T00:57:03+00:00.
+Generated 2026-09-21T01:48:17+00:00.
