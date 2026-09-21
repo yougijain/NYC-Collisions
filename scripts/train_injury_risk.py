@@ -32,6 +32,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "app"))
 
 import db  # noqa: E402
+import palette  # noqa: E402
 from build_dataset import provenance  # noqa: E402
 from models import injury_risk as IR  # noqa: E402
 
@@ -89,21 +90,34 @@ def plot_calibration(curves: Dict[str, pd.DataFrame], path: Path) -> Path:
     Returns:
         The path written.
     """
-    figure, axes = plt.subplots(figsize=(6.5, 6.0))
-    axes.plot([0, 1], [0, 1], linestyle="--", color="#9aa0a6", linewidth=1,
-              label="Perfect calibration", zorder=1)
+    figure, axes = plt.subplots(figsize=(6.5, 6.0), facecolor=palette.SURFACE)
+    axes.set_facecolor(palette.SURFACE)
+    axes.plot([0, 1], [0, 1], linestyle="--", color=palette.INK_MUTED,
+              linewidth=1, label="Perfect calibration", zorder=1)
 
-    for name, curve in curves.items():
+    # Same two series colours the dashboard uses, so the plot does not
+    # arrive on the page in a palette of its own.
+    colours = [palette.SERIES_ALT, palette.SERIES]
+    for (name, curve), colour in zip(curves.items(), colours):
         axes.plot(curve["predicted"], curve["observed"], marker="o",
-                  markersize=5, linewidth=1.8, label=name, zorder=2)
+                  markersize=5, linewidth=2, label=name, color=colour,
+                  zorder=2)
 
-    axes.set_xlabel("Predicted probability of injury")
-    axes.set_ylabel("Observed share of crashes causing injury")
-    axes.set_title("Calibration on held-out crashes\nequal-count bins")
+    axes.set_xlabel("Predicted probability of injury", color=palette.INK_SECONDARY)
+    axes.set_ylabel("Observed share of crashes causing injury",
+                    color=palette.INK_SECONDARY)
+    axes.set_title("Calibration on held-out crashes\nequal-count bins",
+                   color=palette.INK)
     axes.set_xlim(0, 1)
     axes.set_ylim(0, 1)
-    axes.grid(alpha=0.25, linewidth=0.6)
-    axes.legend(loc="upper left", frameon=False)
+    axes.grid(color=palette.GRIDLINE, linewidth=0.6)
+    axes.set_axisbelow(True)
+    for side in ("top", "right"):
+        axes.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        axes.spines[side].set_color(palette.GRIDLINE)
+    axes.tick_params(colors=palette.INK_MUTED)
+    axes.legend(loc="upper left", frameon=False, labelcolor=palette.INK_SECONDARY)
     axes.set_aspect("equal")
 
     path.parent.mkdir(parents=True, exist_ok=True)

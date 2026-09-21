@@ -2,7 +2,10 @@
 WITH hourly AS (
   SELECT
     EXTRACT(hour FROM crash_datetime)::INTEGER AS hour_24,
-    COUNT(*)                                   AS crash_count
+    COUNT(*)                                   AS crash_count,
+    COUNT(*) FILTER (
+      WHERE number_of_persons_injured > 0
+         OR number_of_persons_killed  > 0)     AS harmful_crash_count
   FROM collisions_clean
   WHERE crash_datetime >= $start_date
     AND crash_datetime <  $end_date
@@ -16,6 +19,8 @@ SELECT
     WHEN hour_24 = 12 THEN '12 PM'
     ELSE printf('%d PM', hour_24 - 12)
   END AS hour_label,
-  crash_count
+  hour_24,
+  crash_count,
+  harmful_crash_count
 FROM hourly
 ORDER BY hour_24;
