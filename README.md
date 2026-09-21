@@ -26,29 +26,38 @@ shows up as a diff instead of surviving in a README.
 ## How it works
 
 ```
-NYC Open Data (h9gi-nx95)
-        |  scripts/fetch_data.py      paginated SoQL, $order=collision_id
-        v
-   raw records
-        |  scripts/clean.py           normalise, type, mask bad coords
-        v
-   cleaned rows
-        |  scripts/build_dataset.py   merge + dedupe on collision_id
-        v
-  collisions.parquet  --->  GitHub Release asset (tag: data-latest)
-        |                                   |
-        |  app/db.py    DuckDB view         |  models/injury_risk.py
-        |                                   v
-        |                            scripts/train_injury_risk.py
-        |                              reports/injury_risk/
-        |                                   |
-        |                                   |  models/watchlist.py
-        |                                   v
-        |                            scripts/build_watchlist.py
-        |                              injury_watchlist.csv
-        v                                   |
-  sql/*.sql  ------>  app/dashboard.py  <---+
-                          Streamlit
+NYC Open Data (h9gi-nx95)                NYC Open Data (7ym2-wayt)
+        |  scripts/fetch_data.py                  |  scripts/fetch_traffic_volume.py
+        |    paginated SoQL,                      |    both through scripts/socrata.py
+        |    $order=collision_id                  v
+        v                                  traffic_volume.parquet
+   raw records                                    |   (Release asset)
+        |  scripts/clean.py                       |
+        |    normalise, type, mask bad coords     |
+        v                                         |
+   cleaned rows                                   |
+        |  scripts/build_dataset.py               |
+        |    merge + dedupe on collision_id       |
+        v                                         |
+  collisions.parquet  --->  Release asset         |
+        |                        |                |
+        |  app/db.py             |  models/injury_risk.py
+        |    DuckDB view         v                |
+        |                 scripts/train_injury_risk.py
+        |                   reports/injury_risk/   |
+        |                        |                |
+        |                        |  models/watchlist.py
+        |                        v                |
+        |                 scripts/build_watchlist.py
+        |                   injury_watchlist.csv   |
+        |                        |                |
+        |                        |  models/exposure.py
+        |                        v                v
+        |                 scripts/build_exposure.py
+        |                   injury_exposure.csv
+        v                        |
+  sql/*.sql  ---->  app/dashboard.py  <-----------+
+                       Streamlit
 ```
 
 Refreshes are incremental. Each run re-requests a 30-day overlap window
@@ -176,14 +185,32 @@ python scripts/build_watchlist.py   # rewrites the three committed CSVs
 
 ### What it does not prove
 
-**There is no exposure denominator.** This dataset has crashes but no traffic
-counts, so a junction with many crashes may simply be a junction with many
-vehicles. Every rate here is per *crash*, never per vehicle passing through,
-and nothing on the list is a claim that an intersection is dangerous in the
-ordinary sense. NYC DOT publishes automated traffic volume counts on the same
-open data portal; joining them is what would turn crashes-per-crash into
-crashes-per-million-vehicles, which is the number a traffic engineer actually
-wants.
+**This is not a ranking of dangerous intersections — and that is now measured
+rather than asserted.** Every rate on the list is per *crash*: of the crashes
+at this junction, how many hurt somebody. The question a traffic engineer asks
+is per *vehicle*, and answering it needs to know how many vehicles pass
+through, which the collision data does not say.
+
+NYC DOT publishes automated traffic volume counts on the same open data
+portal. `models/exposure.py` joins them on, so the gap between the two
+questions can be put in numbers instead of in a disclaimer.
+
+<!-- generated:exposure-coverage -->
+NYC DOT's automated traffic counts reach **425 of the 1,075 located sites** (39.5%): a recorder within 150m whose location text names one of the junction's own streets. Those sites see a median 14,314 vehicles a day past the counter, and a median 0.824 crashes that hurt someone per million vehicles.
+
+Ranking them by that rate rather than by crash mix gives a substantially different order — the two agree at a Spearman correlation of **0.27**. That is the distance between the two questions, in a number.
+
+It is also why the watchlist is not re-ranked by it. A recorder sits on one segment rather than across a junction, and 338 of the matched counters cover a single direction, roughly half the traffic on a two-way street; sort by crashes per vehicle and the head of the list is whichever junction has the most under-measured traffic. Counts are a median 10 years old, the oldest from 2007. So every row carries a grade for how much weight it can take — 46 high (the counter names both streets and covers both directions), 190 medium, 189 low — and the ranking stays with the crash-mix residual, which covers every site rather than a third of them.
+<!-- /generated:exposure-coverage -->
+
+Read the list as what it is: sites whose crashes injure people more often than
+their circumstances account for. That is a screening question, not a verdict,
+and it is not the same as the site you are most likely to be hurt at.
+
+What would close the gap is a count at every approach to a junction rather
+than on one segment of one street, taken in the window the crashes are drawn
+from. DOT's counts are deployments, not a network: a recorder goes out for a
+week or two and moves on.
 
 The model card lists the rest: the features are an officer's judgement
 recorded after the fact, a quarter of contributing factors say "Unspecified",
@@ -275,7 +302,14 @@ python scripts/dataset_facts.py            # headline figures for this build
 python scripts/build_seed.py               # re-cut the committed fallback
 python scripts/train_injury_risk.py        # retrain, re-measure, redraw
 python scripts/build_watchlist.py          # rescore and rank intersections
+python scripts/fetch_traffic_volume.py     # pull DOT counts (7ym2-wayt)
+python scripts/build_exposure.py           # join counts, rebuild the rates
+python scripts/sync_docs.py                # rewrite the figures in the prose
 ```
+
+`build_exposure.py` reads `data/clean/traffic_volume.parquet` if it is there
+and the published Release asset otherwise, so it works without running the
+fetch first.
 
 `pytest` runs against the committed seed unless `NYC_COLLISIONS_DATA` points
 it elsewhere, so a code change is never graded on whatever the city published

@@ -38,10 +38,16 @@ travels with every row too, so a reader can discount an old one.
 """
 
 import re
-from typing import Dict, List, Optional
+import sys
+from pathlib import Path
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+
+from street_names import canonical as normalise_name  # noqa: E402
 
 # NY State Plane Long Island, in US survey feet -- what DOT publishes
 # wktgeom in -- and plain latitude/longitude, which everything else here
@@ -62,12 +68,21 @@ MATCH_RADIUS_M = 150.0
 # traffic badly.
 REQUIRED_HOURS = 24
 
-# Every hour present is not the same as every bin present: 376 segment-days
-# carry exactly one fifteen-minute reading per hour, which sums to a
-# quarter of the traffic and passed an hours-only check. Recorders bin by
-# ten minutes or by fifteen depending on the campaign, so the expected
-# count is derived per day rather than assumed.
+# Every hour present is not the same as every bin present. 240 segment-days
+# have all 24 hours but only half their readings, which sums to half the
+# traffic and passed an hours-only check.
+#
+# How many readings an hour should hold is a property of the campaign, not
+# of the day: recorders bin by the hour, by fifteen minutes or by ten
+# depending on which request they were deployed under. Deriving it per day
+# cannot see this failure at all -- a day that lost half its bins looks
+# exactly like a campaign that used half as many -- which is why the
+# expectation comes from the requestid the readings were filed under.
 MIN_BIN_COVERAGE = 0.9
+
+# Readings filed under one deployment request. Every segment-day in a
+# request was recorded at the same interval.
+CAMPAIGN = "requestid"
 
 # A recorder that logged nothing all day was broken, not parked on an
 # empty street.
@@ -90,41 +105,14 @@ SITE_SEPARATOR = " @ "
 
 # DOT writes street names as abbreviations, and its `street` field is
 # free text describing where the recorder sat -- "RALPH AVENUE SOUTH O
-# CLARENDON ROAD", not "Ralph Avenue". Both sides get flattened to the
-# same vocabulary before they are compared.
-_ABBREVIATIONS: Dict[str, str] = {
-    "AV": "AVENUE", "AVE": "AVENUE", "ST": "STREET", "STR": "STREET",
-    "PL": "PLACE", "BLVD": "BOULEVARD", "BL": "BOULEVARD", "BLV": "BOULEVARD",
-    "RD": "ROAD", "DR": "DRIVE", "PKWY": "PARKWAY", "PKY": "PARKWAY",
-    "PWY": "PARKWAY", "PARKWY": "PARKWAY", "EXPY": "EXPRESSWAY",
-    "EXPWY": "EXPRESSWAY", "EXWY": "EXPRESSWAY", "EXP": "EXPRESSWAY",
-    "EP": "EXPRESSWAY", "LN": "LANE", "LA": "LANE", "CT": "COURT",
-    "TER": "TERRACE", "TERR": "TERRACE", "HWY": "HIGHWAY", "BRG": "BRIDGE",
-    "BR": "BRIDGE", "SQ": "SQUARE", "PLZ": "PLAZA", "CIR": "CIRCLE",
-    "TPKE": "TURNPIKE", "CONC": "CONCOURSE",
-}
-_ORDINAL = re.compile(r"^(\d+)(ST|ND|RD|TH)$")
-
-
-def normalise_name(name: object) -> str:
-    """Flatten a street name to a common vocabulary.
-
-    Expands DOT's abbreviations and drops ordinal suffixes, so "E 165TH
-    ST" and "EAST 165 STREET" come out the same.
-
-    Args:
-        name: A street name, or anything else.
-
-    Returns:
-        The normalised name, empty for a non-string.
-    """
-    if not isinstance(name, str):
-        return ""
-    words = []
-    for word in re.sub(r"[^A-Z0-9 ]", " ", name.upper()).split():
-        ordinal = _ORDINAL.match(word)
-        words.append(ordinal.group(1) if ordinal else _ABBREVIATIONS.get(word, word))
-    return " ".join(words)
+# CLARENDON ROAD", not "Ralph Avenue". Both sides are flattened through
+# scripts/street_names.py, the same vocabulary the crash records are keyed
+# by, so a site and a counter that name one street agree on its spelling.
+# Two tables would drift: DOT writes "E 165 ST" where the watchlist, after
+# cleaning, holds "EAST 165 STREET", and a local table missing the
+# directional expansion silently loses every directional street. Sharing
+# one takes matched sites from 416 to 425, and the ones where the counter
+# names both of the junction's streets from 175 to 196.
 
 
 def count_points(counts: pd.DataFrame) -> pd.DataFrame:
@@ -194,6 +182,16 @@ def daily_volumes(counts: pd.DataFrame) -> pd.DataFrame:
     for column in ("yr", "m", "d", "hh", "vol"):
         numbers[column] = pd.to_numeric(numbers[column], errors="coerce")
     numbers = numbers.dropna(subset=["yr", "m", "d", "hh", "vol", "segmentid"])
+    if numbers.empty:
+        return pd.DataFrame()
+
+    # The interval each deployment recorded at, carried down to its rows.
+    campaign = numbers.get(
+        CAMPAIGN, pd.Series("", index=numbers.index)
+    ).fillna("")
+    numbers["bins_per_hour"] = campaign.map(
+        numbers.groupby(campaign)["mm"].nunique()
+    )
 
     by_day = numbers.groupby(
         ["segmentid", "direction", "yr", "m", "d"], observed=True
@@ -201,9 +199,8 @@ def daily_volumes(counts: pd.DataFrame) -> pd.DataFrame:
         volume=("vol", "sum"),
         hours=("hh", "nunique"),
         readings=("vol", "size"),
-        bins_per_hour=("mm", "nunique"),
+        bins_per_hour=("bins_per_hour", "max"),
     )
-    # Expected readings for the interval this campaign actually used.
     expected = REQUIRED_HOURS * by_day["bins_per_hour"].clip(lower=1)
     complete = by_day[
         (by_day["hours"] >= REQUIRED_HOURS)
@@ -244,26 +241,47 @@ def match_sites(
     sites: pd.DataFrame,
     points: pd.DataFrame,
     radius_m: float = MATCH_RADIUS_M,
-    candidates: int = 15,
+    candidates: int = 25,
 ) -> pd.DataFrame:
-    """Attach each site to the nearest counter that is actually on it.
+    """Attach each site to the busiest counter that is actually on it.
 
-    Proximity alone is not a match: a recorder 150m away on a different
-    road measures different traffic. A candidate only counts if its
-    location text names one of the site's own two streets, which rules
-    out the parallel street one block over.
+    Two rules, and the second is the one that matters.
+
+    A candidate only counts if its location text names one of the site's
+    own two streets. Proximity alone is not a match: a recorder 150m away
+    on the parallel street measures different traffic, and requiring the
+    name keeps 95% of matches on the right road where distance alone
+    manages 69%.
+
+    Among those that qualify, the busiest wins rather than the nearest.
+    Half of matched sites have more than one counter in range, and the
+    nearest is as likely to sit on a service road as on the arterial --
+    which is how Bruckner Boulevard came back at 1,312 vehicles a day and
+    topped a per-vehicle ranking it has no business being on. The busiest
+    approach is still an undercount of what crosses a junction, but it is
+    an undercount that does not invert the order.
 
     Args:
         sites: Watchlist rows carrying `site`, latitude and longitude.
-        points: Output of `count_points`.
+        points: Output of `count_points`, merged with `daily_volumes` so
+            each carries `vehicles_per_day`.
         radius_m: How far a counter may sit from the junction.
         candidates: Nearest neighbours to consider per site.
 
     Returns:
-        One row per matched site: site, segment_id, metres, and whether
-        the counter's description named one or both of its streets.
+        One row per matched site: site, segment_id, metres, how many
+        counters qualified, and whether the chosen one named both streets.
+
+    Raises:
+        KeyError: If `points` carries no `vehicles_per_day`.
     """
     from scipy.spatial import cKDTree
+
+    if not points.empty and "vehicles_per_day" not in points.columns:
+        raise KeyError(
+            "match_sites needs points merged with daily_volumes(): the "
+            "busiest qualifying counter cannot be chosen without volumes."
+        )
 
     located = sites.dropna(subset=["latitude", "longitude"])
     if located.empty or points.empty:
@@ -282,21 +300,28 @@ def match_sites(
     matches: List[Dict] = []
     for row, (row_distances, row_indices) in enumerate(zip(distances, indices)):
         street_a, street_b = first[row], second[row]
+        qualifying = []
         for metres, index in zip(row_distances, row_indices):
             if metres > radius_m:
                 break
             described = points["described"].iat[index]
             names_a = bool(street_a) and street_a in described
             names_b = bool(street_b) and street_b in described
-            if not (names_a or names_b):
-                continue
-            matches.append({
-                "site": located["site"].iat[row],
-                "segment_id": points["segment_id"].iat[index],
-                "metres": round(float(metres), 1),
-                "names_both_streets": bool(names_a and names_b),
-            })
-            break  # the nearest qualifying counter wins
+            if names_a or names_b:
+                qualifying.append((index, float(metres), names_a and names_b))
+
+        if not qualifying:
+            continue
+        index, metres, both = max(
+            qualifying, key=lambda c: points["vehicles_per_day"].iat[c[0]]
+        )
+        matches.append({
+            "site": located["site"].iat[row],
+            "segment_id": points["segment_id"].iat[index],
+            "metres": round(metres, 1),
+            "counters_in_range": len(qualifying),
+            "names_both_streets": bool(both),
+        })
 
     return pd.DataFrame(matches)
 
@@ -344,8 +369,28 @@ def exposure_rates(
     joined["harmful_per_million"] = (
         joined["crashes"] * joined["observed_rate"] / joined["million_vehicles"]
     )
-    return joined.sort_values("harmful_per_million", ascending=False).reset_index(
-        drop=True
+    joined["confidence"] = _confidence(joined)
+    return joined.sort_values(
+        ["confidence", "harmful_per_million"], ascending=[True, False]
+    ).reset_index(drop=True)
+
+
+def _confidence(rates: pd.DataFrame) -> pd.Series:
+    """How much weight a site's denominator can carry.
+
+    A single-direction count on a two-way street measures roughly half
+    the traffic, and nothing in this data says which streets are one-way.
+    That is the difference between a rate worth quoting and a rate worth
+    only glancing at, so it is on the row rather than in a footnote.
+    """
+    both_streets = rates["names_both_streets"]
+    both_directions = rates["directions_counted"] >= 2
+    return pd.Series(
+        np.where(
+            both_streets & both_directions, "high",
+            np.where(both_streets | both_directions, "medium", "low"),
+        ),
+        index=rates.index,
     )
 
 
@@ -368,4 +413,15 @@ def coverage(sites: pd.DataFrame, rates: pd.DataFrame) -> Dict:
             pd.Timestamp.now().year - rates["counted_year"].median()
         ),
         "oldest_count_year": int(rates["counted_year"].min()),
+        "by_confidence": rates["confidence"].value_counts().to_dict(),
+        "median_harmful_per_million": round(
+            float(rates["harmful_per_million"].median()), 3
+        ),
+        # The number the watchlist's caveat has only ever asserted: how
+        # much the crash-mix ranking and a per-vehicle one actually agree.
+        "spearman_excess_vs_per_vehicle": round(
+            float(rates["excess"].corr(
+                rates["harmful_per_million"], method="spearman"
+            )), 3
+        ),
     }

@@ -37,6 +37,12 @@ def watchlist_data():
     return db.load_watchlist(), db.load_factor_risk(), db.load_watchlist_summary()
 
 
+@st.cache_data(ttl=QUERY_CACHE_TTL, show_spinner=False)
+def exposure_data():
+    """Traffic volumes for the sites that have them, and their coverage."""
+    return db.load_exposure(), db.load_exposure_summary()
+
+
 def say(sentence: Optional[str]) -> None:
     """Put a chart's takeaway underneath it, if there is one to make."""
     if sentence:

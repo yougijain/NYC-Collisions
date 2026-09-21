@@ -23,6 +23,7 @@ concurrency:
 env:
   RELEASE_TAG: data-latest
   ASSET: data/clean/collisions.parquet
+  COUNTS: data/clean/traffic_volume.parquet
 
 jobs:
   refresh:
@@ -102,6 +103,19 @@ jobs:
           python scripts/dataset_facts.py
           python scripts/data_quality_report.py
 
+      - name: Fetch the traffic counts
+        # Published by .github/workflows/traffic-volume.yml, which runs on
+        # demand because DOT republishes in occasional batches. If it has
+        # never run, the exposure step below is skipped rather than failing
+        # the refresh: the watchlist does not depend on it.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$RELEASE_TAG" \
+            --pattern traffic_volume.parquet \
+            --dir data/clean \
+            || echo "No published traffic counts yet."
+
       - name: Rescore the injury risk model
         # Six model fits: one for the reported metrics and five rolling-origin
         # folds for the watchlist. A few minutes a week, against a model card
@@ -112,7 +126,20 @@ jobs:
         run: |
           python scripts/train_injury_risk.py
           python scripts/build_watchlist.py
-          python scripts/sync_docs.py
+
+      - name: Rebuild the exposure join
+        # The watchlist moves every week, so the sites a counter is attached
+        # to move with it. Rerunning here keeps injury_exposure.csv about the
+        # list actually being published rather than last week's.
+        if: hashFiles('data/clean/traffic_volume.parquet') != ''
+        env:
+          NYC_COLLISIONS_DATA: ${{ env.ASSET }}
+        run: python scripts/build_exposure.py
+
+      - name: Rewrite the figures in the prose
+        env:
+          NYC_COLLISIONS_DATA: ${{ env.ASSET }}
+        run: python scripts/sync_docs.py
 
       - name: Commit the figures and scores
         run: |
@@ -124,6 +151,8 @@ jobs:
                   data/clean/injury_watchlist.csv \
                   data/clean/injury_risk_factors.csv \
                   data/clean/watchlist_summary.json \
+                  data/clean/injury_exposure.csv \
+                  data/clean/exposure_summary.json \
                   reports/injury_risk/ \
                   README.md \
                   docs/model_card.md

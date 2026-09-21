@@ -52,6 +52,11 @@ WATCHLIST_PATH = CLEAN_DIR / "injury_watchlist.csv"
 FACTOR_RISK_PATH = CLEAN_DIR / "injury_risk_factors.csv"
 WATCHLIST_SUMMARY_PATH = CLEAN_DIR / "watchlist_summary.json"
 
+# Traffic volumes joined onto the watchlist, for the third of sites that
+# sit near a DOT counter.
+EXPOSURE_PATH = CLEAN_DIR / "injury_exposure.csv"
+EXPOSURE_SUMMARY_PATH = CLEAN_DIR / "exposure_summary.json"
+
 # Re-download the Release asset at most this often.
 CACHE_TTL_SECONDS = 6 * 60 * 60
 DOWNLOAD_TIMEOUT = 120
@@ -239,3 +244,15 @@ def load_watchlist_summary() -> Dict[str, Any]:
     if not WATCHLIST_SUMMARY_PATH.exists():
         return {}
     return json.loads(WATCHLIST_SUMMARY_PATH.read_text(encoding="utf-8"))
+
+
+def load_exposure() -> pd.DataFrame:
+    """Traffic volumes for the watchlist sites that have one."""
+    return _read_csv(EXPOSURE_PATH)
+
+
+def load_exposure_summary() -> Dict[str, Any]:
+    """Coverage, and how far the two rankings actually agree."""
+    if not EXPOSURE_SUMMARY_PATH.exists():
+        return {}
+    return json.loads(EXPOSURE_SUMMARY_PATH.read_text(encoding="utf-8"))

@@ -1,0 +1,24 @@
+{
+  "sites": 1093,
+  "sites_located": 1075,
+  "matched": 425,
+  "matched_share": 0.3953,
+  "named_both_streets": 195,
+  "median_metres": 72.6,
+  "median_vehicles_per_day": 14314,
+  "single_direction_counts": 338,
+  "median_count_age_years": 10,
+  "oldest_count_year": 2007,
+  "by_confidence": {
+    "medium": 190,
+    "low": 189,
+    "high": 46
+  },
+  "median_harmful_per_million": 0.824,
+  "spearman_excess_vs_per_vehicle": 0.27,
+  "window": {
+    "from": "2022-01-01",
+    "to": "2026-06-11"
+  },
+  "window_days": 1622
+}

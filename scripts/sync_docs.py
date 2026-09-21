@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 DATASET_FACTS = ROOT / "docs" / "dataset_facts.json"
 MODEL_METRICS = ROOT / "reports" / "injury_risk" / "metrics.json"
 WATCHLIST_SUMMARY = ROOT / "data" / "clean" / "watchlist_summary.json"
+EXPOSURE_SUMMARY = ROOT / "data" / "clean" / "exposure_summary.json"
 WATCHLIST_CSV = ROOT / "data" / "clean" / "injury_watchlist.csv"
 FACTORS_CSV = ROOT / "data" / "clean" / "injury_risk_factors.csv"
 
@@ -179,6 +180,41 @@ def watchlist_scope(summary: Dict) -> str:
     )
 
 
+def exposure_coverage(summary: Dict) -> str:
+    """How far the traffic counts reach, and what they say about the order."""
+    from models.exposure import MATCH_RADIUS_M
+
+    grades = summary["by_confidence"]
+    return (
+        f"NYC DOT's automated traffic counts reach **{summary['matched']:,} "
+        f"of the {summary['sites_located']:,} located sites** "
+        f"({summary['matched_share']:.1%}): a recorder within "
+        f"{MATCH_RADIUS_M:.0f}m whose location text names one of the "
+        f"junction's own streets. Those sites see a median "
+        f"{summary['median_vehicles_per_day']:,} vehicles a day past the "
+        f"counter, and a median "
+        f"{summary['median_harmful_per_million']} crashes that hurt someone "
+        f"per million vehicles.\n\n"
+        f"Ranking them by that rate rather than by crash mix gives a "
+        f"substantially different order — the two agree at a Spearman "
+        f"correlation of **{summary['spearman_excess_vs_per_vehicle']}**. "
+        f"That is the distance between the two questions, in a number.\n\n"
+        f"It is also why the watchlist is not re-ranked by it. A recorder "
+        f"sits on one segment rather than across a junction, and "
+        f"{summary['single_direction_counts']:,} of the matched counters "
+        f"cover a single direction, roughly half the traffic on a two-way "
+        f"street; sort by crashes per vehicle and the head of the list is "
+        f"whichever junction has the most under-measured traffic. Counts "
+        f"are a median {summary['median_count_age_years']} years old, the "
+        f"oldest from {summary['oldest_count_year']}. So every row carries "
+        f"a grade for how much weight it can take — {grades.get('high', 0)} "
+        f"high (the counter names both streets and covers both directions), "
+        f"{grades.get('medium', 0)} medium, {grades.get('low', 0)} low — "
+        f"and the ranking stays with the crash-mix residual, which covers "
+        f"every site rather than a third of them."
+    )
+
+
 def factor_examples(factors) -> str:
     """The loudest and the quietest contributing factor, as a sentence."""
     ranked = factors.sort_values("predicted_rate", ascending=False)
@@ -228,6 +264,10 @@ def build_blocks() -> Dict[str, str]:
     if summary:
         blocks["watchlist-headline"] = watchlist_headline(summary)
         blocks["watchlist-scope"] = watchlist_scope(summary)
+
+    exposure = _load(EXPOSURE_SUMMARY)
+    if exposure:
+        blocks["exposure-coverage"] = exposure_coverage(exposure)
 
     import pandas as pd
 
