@@ -12,7 +12,15 @@ A scheduled GitHub Actions workflow pulls new crashes from the NYC Open Data
 publishes it as a GitHub Release asset. The Streamlit dashboard queries that
 Parquet with DuckDB and renders filters, charts and a heatmap over New York.
 
-Coverage is January 2020 to the present, and grows on its own.
+Coverage is January 2020 to the present, and grows on its own. The current
+build holds **637,256 crashes** through **2026-06-11**, of which 244,916
+(38.4%) injured or killed someone: 326,869 people injured and 1,701 killed.
+
+Those figures are generated, not typed. `scripts/dataset_facts.py` measures
+whatever build is current and writes [`docs/dataset_facts.md`](docs/dataset_facts.md)
+and `docs/dataset_facts.json`; the weekly refresh reruns it and commits the
+result. Quote that file rather than measuring your own, and a stale number
+shows up as a diff instead of surviving in a README.
 
 ## How it works
 
@@ -57,6 +65,21 @@ a Release asset keeps the data out of git history entirely.
 - **Ingest**: Socrata caps responses at 50,000 rows, so larger slices are
   walked with `$limit`/`$offset` under `$order=collision_id`. Offset paging
   without a total order silently drops and repeats rows.
+- **Street columns**: the JSON API returns `cross_street_name` and
+  `off_street_name` under each other's names, so a build taken from it files
+  house numbers as cross streets and carries no identifiable intersections at
+  all. Matching the 27,164 `collision_id`s present in both the API and the CSV
+  export pins it down: the export's CROSS STREET NAME equals the API's
+  `off_street_name` for 99.996% of them, and its OFF STREET NAME equals the
+  API's `cross_street_name` for 100%. `scripts/clean.py` detects the payload
+  shape and restores the documented meaning, then collapses the fixed-width
+  padding the source pads street names with, which otherwise stops two
+  records at one intersection from grouping together.
+- **Dataset versioning**: `DATASET_VERSION` in `scripts/clean.py` stamps the
+  cleaning semantics into each Parquet build. An incremental run that finds a
+  dataset stamped older than the code refuses to merge into it and rebuilds
+  from scratch, so a change like the street-column fix reaches every row
+  rather than only the ones fetched after it shipped.
 - **Queries**: the date and borough filters are bound as DuckDB named
   parameters and pushed into every query, so aggregates are computed in SQL
   rather than by loading the table into pandas.
@@ -115,7 +138,14 @@ Other tasks:
 ```bash
 pytest -q                                  # test suite, no network needed
 python scripts/data_quality_report.py      # completeness + validation report
+python scripts/dataset_facts.py            # headline figures for this build
+python scripts/build_seed.py               # re-cut the committed fallback
 ```
+
+`pytest` runs against the committed seed unless `NYC_COLLISIONS_DATA` points
+it elsewhere, so a code change is never graded on whatever the city published
+that morning. The refresh workflow sets that variable to the build it is about
+to publish and reuses the same suite as the gate.
 
 Open `notebooks/cleaning.ipynb` or `notebooks/sql_queries.ipynb` to explore
 the cleaning steps and validate each SQL script.
@@ -134,7 +164,12 @@ the cleaning steps and validate each SQL script.
 be triggered manually with a full-rebuild toggle. It downloads the current
 asset, builds incrementally, runs the test suite against the result, and
 publishes only if those tests pass, so a bad upstream day cannot replace a
-good dataset. It needs no secrets beyond the automatic `GITHUB_TOKEN`.
+good dataset. It then regenerates the figures above and commits them. It needs
+no secrets beyond the automatic `GITHUB_TOKEN`.
+
+The committed seed is not regenerated weekly; a megabyte of binary churn every
+Monday is not worth it. Re-cut it with `python scripts/build_seed.py` when the
+schema changes or the fallback drifts far enough from the live data to matter.
 
 ## Help
 
