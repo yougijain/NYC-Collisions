@@ -10,6 +10,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import db  # noqa: E402
+import narrative  # noqa: E402
 
 # A browser cannot usefully render more points than this, and shipping them
 # all would exhaust the app's memory on the full dataset.
@@ -66,16 +67,19 @@ def load_watchlist():
     return db.load_watchlist(), db.load_factor_risk(), db.load_watchlist_summary()
 
 
-def overview(con, params):
+def _say(sentence: str | None) -> None:
+    """Put a chart's takeaway underneath it, if there is one to make."""
+    if sentence:
+        st.caption(sentence)
+
+
+def overview(con, params, metrics):
     """Counts, trends and the crash heatmap, over the sidebar's filters."""
     # ---------------- Key metrics ----------------
-    metrics = run(con, "01_metrics.sql", params).iloc[0]
     crashes = int(metrics["crash_count"])
     harmful = int(metrics["harmful_crash_count"])
     injured = int(metrics["total_injuries"])
     killed = int(metrics["total_fatalities"])
-
-    st.subheader("What is in the selected crashes")
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Crashes", f"{crashes:,}")
@@ -88,49 +92,50 @@ def overview(con, params):
 
     if crashes:
         st.caption(
-            f"{harmful / crashes:.1%} of these crashes injured or killed "
-            f"someone, and they average {injured / crashes:.2f} injuries per "
-            f"crash across all of them, or "
-            f"{(injured / harmful if harmful else 0):.2f} per crash that "
-            f"caused an injury."
+            f"That is {injured / crashes:.2f} injuries per crash across all "
+            f"of them, or {(injured / harmful if harmful else 0):.2f} per "
+            f"crash that caused one."
         )
 
     st.divider()
 
     # ---------------- Charts ----------------
+    # Each chart carries the sentence it is making. app/narrative.py computes
+    # those from the same frame the chart is drawn from, so the words cannot
+    # drift from the picture or go stale when a filter changes.
     by_borough = run(con, "02_aggregate.sql", params)
-    st.subheader("Total Injuries by Borough")
+    st.subheader("Where people get hurt")
     st.bar_chart(by_borough.set_index("borough")["total_injuries"])
+    _say(narrative.borough_takeaway(by_borough))
 
     by_hour = run(con, "03_time_analysis.sql", params)
-    st.subheader("Crashes by Hour (AM/PM)")
+    st.subheader("When crashes happen")
     st.line_chart(by_hour.set_index("hour_label")["crash_count"])
+    _say(narrative.hour_takeaway(by_hour))
 
-    trends = run(con, "04_trends.sql", params)
+    trends = narrative.drop_partial_month(run(con, "04_trends.sql", params))
     trends["month"] = pd.to_datetime(trends["month"])
 
-    st.subheader("Crashes and injuries by month")
+    st.subheader("Crashes and injuries, month by month")
     st.line_chart(trends.set_index("month")[["crash_count", "total_injuries"]])
+    _say(narrative.trend_takeaway(trends))
 
     # On its own axis. Sharing one with injuries, which run two orders of
     # magnitude higher, flattened this into a line along the bottom -- the
     # series about people dying was the one you could not see.
-    st.subheader("People killed by month")
+    st.subheader("People killed, month by month")
     st.line_chart(trends.set_index("month")["total_fatalities"], color="#c1272d")
+    _say(narrative.fatality_takeaway(trends))
 
     # ---------------- Crash heatmap ----------------
-    st.subheader("Crash Heatmap")
+    st.subheader("Where the harmful crashes are")
     points = run(con, "05_map_points.sql", params)
 
     if points.empty:
         st.info("No geolocated crashes match the current filters.")
         return
 
-    if len(points) >= MAP_POINT_LIMIT:
-        st.caption(
-            f"Showing a random {MAP_POINT_LIMIT:,}-point sample of the "
-            f"matching crashes."
-        )
+    _say(narrative.map_takeaway(len(points), MAP_POINT_LIMIT, metrics))
 
     view_state = pdk.ViewState(
         latitude=40.734,
@@ -188,9 +193,6 @@ def overview(con, params):
             },
         )
     )
-
-    st.subheader("Sample of Filtered Records")
-    st.dataframe(points.head(7))
 
 
 def watchlist_map(sites: pd.DataFrame) -> None:
@@ -404,7 +406,7 @@ def watchlist(boroughs: list[str]) -> None:
 
 
 def main():
-    st.title("NYC Collisions Dashboard")
+    st.title("Which New York crashes hurt people")
 
     con = get_connection()
     bounds = run(con, "00_bounds.sql").iloc[0]
@@ -412,11 +414,6 @@ def main():
     min_date = pd.Timestamp(bounds["min_datetime"]).date()
     max_date = pd.Timestamp(bounds["max_datetime"]).date()
     all_boroughs = list(bounds["boroughs"])
-
-    st.caption(
-        f"{int(bounds['total_crashes']):,} crashes  ·  "
-        f"{min_date} to {max_date}  ·  source: NYC Open Data (h9gi-nx95)"
-    )
 
     st.sidebar.header("Filter Options")
     date_range = st.sidebar.date_input(
@@ -438,9 +435,23 @@ def main():
 
     params = db.filter_params(start_date, end_date, boroughs, MAP_POINT_LIMIT)
 
-    overview_tab, watchlist_tab = st.tabs(["Overview", "Injury risk watchlist"])
+    # The lede, before any chart. A reader who stops here should still leave
+    # knowing what the data says.
+    metrics = run(con, "01_metrics.sql", params).iloc[0]
+    st.markdown(narrative.headline(bounds, metrics))
+    st.caption(
+        "Every crash the NYPD reported, cleaned nightly from NYC Open Data "
+        "(h9gi-nx95) and scored by a model that estimates how likely each "
+        "one was to hurt somebody. Use the watchlist tab for the "
+        "intersections where more crashes do than their circumstances "
+        "account for."
+    )
+
+    overview_tab, watchlist_tab = st.tabs(
+        ["The crashes", "Injury risk watchlist"]
+    )
     with overview_tab:
-        overview(con, params)
+        overview(con, params, metrics)
     with watchlist_tab:
         watchlist(boroughs)
 

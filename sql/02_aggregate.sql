@@ -2,8 +2,11 @@
 SELECT
   COALESCE(borough_resolved, 'UNKNOWN')    AS borough,
   COUNT(*)                        AS crash_count,
+  COUNT(*) FILTER (
+    WHERE number_of_persons_injured > 0
+       OR number_of_persons_killed  > 0)  AS harmful_crash_count,
   SUM(number_of_persons_injured)  AS total_injuries,
-  AVG(number_of_persons_injured)  AS avg_injuries_per_crash
+  SUM(number_of_persons_killed)   AS total_fatalities
 FROM collisions_clean
 WHERE crash_datetime >= $start_date
   AND crash_datetime <  $end_date
