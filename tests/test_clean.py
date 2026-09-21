@@ -3,7 +3,13 @@
 import pandas as pd
 import pytest
 
-from clean import CANONICAL_COLUMNS, clean, normalize_columns
+from clean import (
+    CANONICAL_COLUMNS,
+    clean,
+    is_api_payload,
+    normalize_columns,
+    normalize_street_names,
+)
 
 
 def api_row(**overrides):
@@ -23,6 +29,25 @@ def api_row(**overrides):
         "vehicle_type_code2": "Bike",
         "vehicle_type_code_3": "Taxi",
         "vehicle_type_code_5": "Van",
+        # The API returns these two under each other's names: what reads as
+        # the cross street is the house address, and vice versa.
+        "on_street_name": "BARUCH DRIVE           ",
+        "cross_street_name": "234       WEST 114 STREET",
+        "off_street_name": "DELANCEY STREET        ",
+    }
+    row.update(overrides)
+    return row
+
+
+def csv_row(**overrides):
+    """The same record as the CSV export ships it."""
+    row = {
+        "CRASH DATE": "06/14/2025",
+        "CRASH TIME": "9:05",
+        "COLLISION_ID": "4900001",
+        "ON STREET NAME": "BARUCH DRIVE",
+        "CROSS STREET NAME": "DELANCEY STREET",
+        "OFF STREET NAME": None,
     }
     row.update(overrides)
     return row
@@ -121,5 +146,56 @@ def test_missing_required_column_raises():
 
 
 def test_missing_optional_columns_are_filled_with_nulls():
-    out = clean(pd.DataFrame([api_row()]))
-    assert out["off_street_name"].isna().all()
+    out = clean(pd.DataFrame([api_row(off_street_name=None, cross_street_name=None)]))
+    assert out["cross_street_name"].isna().all()
+
+
+# --- street columns ----------------------------------------------------
+
+def test_api_payload_is_told_apart_from_the_csv_export():
+    assert is_api_payload(api_row().keys())
+    assert not is_api_payload(csv_row().keys())
+
+
+def test_api_cross_and_off_street_are_reconciled():
+    """The API files the address as the cross street and the cross street
+    as the address; a dataset built from it otherwise has no intersections."""
+    out = clean(pd.DataFrame([api_row()])).iloc[0]
+    assert out["on_street_name"] == "BARUCH DRIVE"
+    assert out["cross_street_name"] == "DELANCEY STREET"
+    assert out["off_street_name"] == "234 WEST 114 STREET"
+
+
+def test_the_csv_export_is_left_alone():
+    """Its columns already carry their documented meaning."""
+    out = clean(pd.DataFrame([csv_row()])).iloc[0]
+    assert out["on_street_name"] == "BARUCH DRIVE"
+    assert out["cross_street_name"] == "DELANCEY STREET"
+    assert pd.isna(out["off_street_name"])
+
+
+def test_both_sources_agree_on_one_crash():
+    """The whole point of reconciling: one crash, one answer, either way in."""
+    from_api = clean(pd.DataFrame([api_row()]))
+    from_csv = clean(pd.DataFrame([csv_row()]))
+    streets = ["on_street_name", "cross_street_name"]
+    assert from_api[streets].iloc[0].tolist() == from_csv[streets].iloc[0].tolist()
+
+
+def test_street_padding_is_collapsed():
+    """The source pads to a fixed width, which stops two records at one
+    intersection from grouping together."""
+    df = pd.DataFrame([{
+        "on_street_name": "  ATLANTIC   AVENUE  ",
+        "cross_street_name": "LOGAN STREET",
+        "off_street_name": "1683      BOSTON ROAD",
+    }])
+    out = normalize_street_names(df).iloc[0]
+    assert out["on_street_name"] == "ATLANTIC AVENUE"
+    assert out["off_street_name"] == "1683 BOSTON ROAD"
+
+
+def test_blank_street_names_become_null():
+    df = pd.DataFrame([{"on_street_name": "   ", "cross_street_name": "",
+                        "off_street_name": None}])
+    assert normalize_street_names(df).iloc[0].isna().all()
