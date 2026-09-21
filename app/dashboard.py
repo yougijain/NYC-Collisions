@@ -70,15 +70,30 @@ def overview(con, params):
     """Counts, trends and the crash heatmap, over the sidebar's filters."""
     # ---------------- Key metrics ----------------
     metrics = run(con, "01_metrics.sql", params).iloc[0]
-    st.subheader("Key Metrics")
-    st.caption("Crashes causing injury or death, within the selected filters.")
+    crashes = int(metrics["crash_count"])
+    harmful = int(metrics["harmful_crash_count"])
+    injured = int(metrics["total_injuries"])
+    killed = int(metrics["total_fatalities"])
+
+    st.subheader("What is in the selected crashes")
 
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Incidents", f"{int(metrics['crash_count']):,}")
-    col2.metric("Total Injuries", f"{int(metrics['total_injuries']):,}")
-    col3.metric("Total Fatalities", f"{int(metrics['total_fatalities']):,}")
-    avg = metrics["avg_injuries_per_crash"]
-    col4.metric("Avg Injuries/Crash", f"{avg:.2f}" if pd.notna(avg) else "0.00")
+    col1.metric("Crashes", f"{crashes:,}")
+    col2.metric(
+        "Crashes that hurt someone", f"{harmful:,}",
+        help="At least one person injured or killed.",
+    )
+    col3.metric("People injured", f"{injured:,}")
+    col4.metric("People killed", f"{killed:,}")
+
+    if crashes:
+        st.caption(
+            f"{harmful / crashes:.1%} of these crashes injured or killed "
+            f"someone, and they average {injured / crashes:.2f} injuries per "
+            f"crash across all of them, or "
+            f"{(injured / harmful if harmful else 0):.2f} per crash that "
+            f"caused an injury."
+        )
 
     st.divider()
 
@@ -92,13 +107,16 @@ def overview(con, params):
     st.line_chart(by_hour.set_index("hour_label")["crash_count"])
 
     trends = run(con, "04_trends.sql", params)
-    st.subheader("Monthly Crash Trends")
     trends["month"] = pd.to_datetime(trends["month"])
-    st.line_chart(
-        trends.set_index("month")[
-            ["crash_count", "total_injuries", "total_fatalities"]
-        ]
-    )
+
+    st.subheader("Crashes and injuries by month")
+    st.line_chart(trends.set_index("month")[["crash_count", "total_injuries"]])
+
+    # On its own axis. Sharing one with injuries, which run two orders of
+    # magnitude higher, flattened this into a line along the bottom -- the
+    # series about people dying was the one you could not see.
+    st.subheader("People killed by month")
+    st.line_chart(trends.set_index("month")["total_fatalities"], color="#c1272d")
 
     # ---------------- Crash heatmap ----------------
     st.subheader("Crash Heatmap")

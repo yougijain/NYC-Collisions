@@ -174,17 +174,25 @@ def test_boroughs_are_spelled_the_way_the_dashboard_filters_them(sites):
     assert set(sites["borough"]) <= allowed
 
 
-def test_a_site_inherits_the_borough_of_its_streets():
-    """The Belt Parkway carries 9,534 crashes and a borough on 102 of them,
-    so a site's own rows often do not say."""
+def test_a_site_takes_the_borough_most_of_its_crashes_name():
     df = frame(
-        borough=["BROOKLYN", None, None],
-        on_street_name=["BELT PARKWAY", "BELT PARKWAY", "BELT PARKWAY"],
-        cross_street_name=["OCEAN PARKWAY", "KNAPP STREET", "KNAPP STREET"],
+        borough_resolved=["BROOKLYN", "BROOKLYN", "QUEENS"],
+        borough=[None, None, None],
+        on_street_name=["BELT PARKWAY"] * 3,
+        cross_street_name=["KNAPP STREET"] * 3,
     )
-    sites = W.site_key(df)
-    resolved = W._site_borough(df, sites, pd.Index(["BELT PARKWAY @ KNAPP STREET"]))
+    resolved = W._site_borough(
+        df, W.site_key(df), pd.Index(["BELT PARKWAY @ KNAPP STREET"])
+    )
     assert resolved.iloc[0] == "BROOKLYN"
+
+
+def test_the_pipelines_resolved_borough_is_preferred():
+    """It places a crash by coordinates, which beats reading its street
+    name: 99.9% accurate against 90%."""
+    df = frame(borough=["QUEENS"], borough_resolved=["BROOKLYN"])
+    assert W.borough_column(df) == "borough_resolved"
+    assert W.borough_column(frame(borough=["QUEENS"])) == "borough"
 
 
 def test_top_factors_skip_the_one_that_names_nothing(sites):

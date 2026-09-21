@@ -13,9 +13,9 @@ A scheduled GitHub Actions workflow pulls new crashes from the NYC Open Data
 publishes it as a GitHub Release asset. The Streamlit dashboard queries that
 Parquet with DuckDB and renders filters, charts and a heatmap over New York.
 
-Coverage is January 2020 to the present, and grows on its own. The current
-build holds **637,256 crashes** through **2026-06-11**, of which 244,916
-(38.4%) injured or killed someone: 326,869 people injured and 1,701 killed.
+Coverage is January 2020 to the present, and grows on its own. <!-- generated:dataset-headline -->
+The current build holds **637,256 crashes** through **2026-06-11**, of which 244,916 (38.4%) injured or killed someone: 326,869 people injured and 1,701 killed. Borough is known for 94.6% of them, against 69.3% as the source ships it.
+<!-- /generated:dataset-headline -->
 
 Those figures are generated, not typed. `scripts/dataset_facts.py` measures
 whatever build is current and writes [`docs/dataset_facts.md`](docs/dataset_facts.md)
@@ -80,14 +80,20 @@ circumstances usually hurts people.
 Measured on 121,970 crashes from 2025 onward, which neither the model nor its
 calibration saw:
 
-| Predictor | ROC-AUC | Brier | Brier skill |
-|---|---|---|---|
-| Borough × hour base rate | 0.5491 | 0.2475 | — |
-| Gradient boosting | **0.7943** | **0.1812** | **+26.8%** |
+<!-- generated:model-metrics -->
+| Predictor | ROC-AUC | Brier | Log loss | Mean predicted | Brier skill |
+|---|---|---|---|---|---|
+| Borough × hour base rate | 0.5425 | 0.2478 | 0.6891 | 0.371 | — |
+| Gradient boosting (uncalibrated) | 0.7946 | 0.1862 | 0.5504 | 0.365 | +24.9% |
+| **Gradient boosting** | **0.7946** | **0.1811** | **0.5373** | **0.423** | **+26.9%** |
+
+Observed injury rate on the test fold: 0.432.
+<!-- /generated:model-metrics -->
 
 The baseline is there because it is what anyone can produce in one SQL query.
-That it reaches only 0.549 is itself the finding: *when* and *which borough*
-say almost nothing about whether a crash hurt someone. What was hit does —
+That it barely clears a coin flip is itself the finding: *when* and *which
+borough* say almost nothing about whether a crash hurt someone. What was hit
+does —
 shuffling the second vehicle costs more test AUC than borough, hour, weekday,
 month and vehicle count combined.
 
@@ -99,8 +105,8 @@ Design decisions, in short:
   mostly because fewer property-damage-only crashes are being reported.
 - **Calibrate the level.** That drift leaves an uncalibrated model predicting
   0.366 for a period that ran at 0.432. A single log-odds shift fitted on 2024
-  closes it, taking Brier from 0.1862 to 0.1812 and leaving ROC-AUC untouched.
-  Platt and isotonic were tried and bought 0.0001.
+  closes it, improving Brier while leaving ROC-AUC untouched to four places
+  (see the table above). Platt and isotonic were tried and bought 0.0001.
 - **Brier over ROC-AUC.** The watchlist subtracts predicted rates from
   observed ones, so the probabilities have to be right and not merely ordered
   right.
@@ -128,23 +134,27 @@ second tab turns it into a list of intersections, ranked by one claim:
 > at this intersection, more crashes injured someone than the crashes
 > themselves account for
 
-**544 intersections** with at least 25 crashes between 2022 and 2026 qualify,
-over 413,780 scored crashes. The worst sits **35 points** above what its crash
-mix predicts; the top decile sits 14 points above. 55 clear z = 1.96, against
-roughly 14 expected from chance across that many sites — so the head of the
-list is signal and the tail is a screening queue, not a verdict.
+<!-- generated:watchlist-headline -->
+**544 intersections** with at least 25 crashes between 2022-01-01 and 2026-06-11 qualify, over 413,780 scored crashes. The worst sits **31.7 points** above what its crash mix predicts; the top decile sits 14.2 points above. 57 clear z = 1.96, against roughly 14 expected from chance across that many sites — so the head of the list is signal and the tail is a screening queue, not a verdict.
+<!-- /generated:watchlist-headline -->
 
+<!-- generated:watchlist-examples -->
 | Intersection | Borough | Crashes | Injured | Expected | Excess |
 |---|---|---|---|---|---|
-| Avenue U @ Gerritsen Avenue | Brooklyn | 26 | 88.5% | 51.5% | +35.0 pts |
-| Church Avenue @ Flatbush Avenue | Brooklyn | 31 | 83.9% | 54.3% | +27.6 pts |
-| Atlantic Avenue @ Crescent Street | Brooklyn | 30 | 73.3% | 44.5% | +26.9 pts |
-| Cross Bronx Expressway @ Randall Avenue | Bronx | 28 | 71.4% | 41.7% | +27.8 pts |
+| Avenue U @ Gerritsen Avenue | Brooklyn | 26 | 88.5% | 54.7% | +31.7 pts |
+| Church Avenue @ Flatbush Avenue | Brooklyn | 31 | 83.9% | 53.9% | +27.9 pts |
+| Atlantic Avenue @ Crescent Street | Brooklyn | 30 | 73.3% | 43.7% | +27.6 pts |
+| Cross Bronx Expressway @ Randall Avenue | Bronx | 28 | 71.4% | 42.4% | +27.0 pts |
+| East 165 Street @ Grand Concourse | Bronx | 27 | 81.5% | 54.4% | +25.0 pts |
+<!-- /generated:watchlist-examples -->
 
 Three things make that number mean something:
 
 - **Sites are keyed direction-free.** "A and B" and "B and A" are one
-  junction, which merges 94,433 apparent sites into 63,132 real ones.
+  junction.
+  <!-- generated:watchlist-scope -->
+  _pending_
+  <!-- /generated:watchlist-scope -->
 - **Every score is out of sample.** Scoring a crash with a model that trained
   on it shrinks its residual, and the residual is the entire product. Each
   year is scored by a model trained on everything before the previous year
@@ -154,10 +164,11 @@ Three things make that number mean something:
   and 15, and the ordering says so.
 
 The same scoring produces the factor table, which is the part a non-technical
-reader repeats back: crashes where the officer wrote *Failure to Yield
-Right-of-Way* injure someone 68.7% of the time, against 13.3% for *Passing Too
-Closely*. Predicted and observed track within a couple of points across all 31
-factors, which is the calibration check worth trusting most.
+reader repeats back.
+
+<!-- generated:factor-examples -->
+Crashes where the officer wrote *Pedestrian/Bicyclist/Other Pedestrian Error/Confusion* injure someone 83.3% of the time, against 13.0% for *Oversized Vehicle*. Predicted and observed track within a couple of points across all 31 factors, which is the calibration check worth trusting most.
+<!-- /generated:factor-examples -->
 
 ```bash
 python scripts/build_watchlist.py   # rewrites the three committed CSVs

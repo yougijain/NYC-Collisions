@@ -16,9 +16,9 @@ model nor its calibration has seen.
 
 | Predictor | ROC-AUC | Brier | Log loss | Mean predicted | Brier skill |
 |---|---|---|---|---|---|
-| Borough x hour base rate | 0.5491 | 0.2475 | 0.6886 | 0.369 | -- |
-| Gradient boosting (uncalibrated) | 0.7943 | 0.1862 | 0.5507 | 0.366 | +24.8% |
-| Gradient boosting | 0.7943 | 0.1812 | 0.5378 | 0.423 | +26.8% |
+| Borough x hour base rate | 0.5425 | 0.2478 | 0.6891 | 0.371 | -- |
+| Gradient boosting (uncalibrated) | 0.7946 | 0.1862 | 0.5504 | 0.365 | +24.9% |
+| Gradient boosting | 0.7946 | 0.1811 | 0.5373 | 0.423 | +26.9% |
 
 The observed injury rate on the test period is 0.432.
 
@@ -33,17 +33,17 @@ Test ROC-AUC lost when each feature is shuffled, 5 repeats.
 
 | Feature | AUC drop | SD |
 |---|---|---|
-| vehicle_2 | 0.0975 | 0.0005 |
-| factor_2 | 0.0955 | 0.0008 |
-| factor_1 | 0.0734 | 0.0010 |
-| vehicle_1 | 0.0522 | 0.0004 |
-| road_class | 0.0296 | 0.0004 |
-| borough | 0.0056 | 0.0002 |
-| hour | 0.0051 | 0.0001 |
+| factor_2 | 0.0975 | 0.0007 |
+| vehicle_2 | 0.0914 | 0.0004 |
+| factor_1 | 0.0735 | 0.0011 |
+| vehicle_1 | 0.0527 | 0.0004 |
+| road_class | 0.0297 | 0.0004 |
+| borough | 0.0052 | 0.0002 |
 | vehicle_count | 0.0051 | 0.0001 |
+| hour | 0.0048 | 0.0001 |
 | month | 0.0024 | 0.0002 |
-| at_intersection | 0.0011 | 0.0000 |
-| weekday | 0.0005 | 0.0001 |
+| at_intersection | 0.0012 | 0.0001 |
+| weekday | 0.0004 | 0.0000 |
 
 ## Calibration
 

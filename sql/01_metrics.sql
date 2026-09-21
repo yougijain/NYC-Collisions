@@ -1,15 +1,17 @@
--- Headline metrics for crashes causing injury or death.
--- Aggregated in SQL so the figures stay correct at full dataset size.
+-- Headline counts over every crash in the filter, not only the harmful ones.
+--
+-- This query used to restrict itself to injury and fatal crashes, which made
+-- its crash_count disagree with the total shown in the page header, and made
+-- its average injuries figure mean "per injury crash" while being read as
+-- "per crash". Both numbers now say what they are.
 SELECT
-  COUNT(*)                                         AS crash_count,
-  COALESCE(SUM(number_of_persons_injured), 0)      AS total_injuries,
-  COALESCE(SUM(number_of_persons_killed), 0)       AS total_fatalities,
-  AVG(number_of_persons_injured)
-    FILTER (WHERE number_of_persons_injured > 0)   AS avg_injuries_per_crash
+  COUNT(*)                                          AS crash_count,
+  COUNT(*) FILTER (
+    WHERE number_of_persons_injured > 0
+       OR number_of_persons_killed  > 0)            AS harmful_crash_count,
+  COALESCE(SUM(number_of_persons_injured), 0)       AS total_injuries,
+  COALESCE(SUM(number_of_persons_killed), 0)        AS total_fatalities
 FROM collisions_clean
-WHERE (number_of_persons_injured     > 0
-    OR number_of_pedestrians_injured > 0
-    OR number_of_persons_killed      > 0)
-  AND crash_datetime >= $start_date
+WHERE crash_datetime >= $start_date
   AND crash_datetime <  $end_date
-  AND list_contains($boroughs, COALESCE(borough, 'UNKNOWN'));
+  AND list_contains($boroughs, COALESCE(borough_resolved, 'UNKNOWN'));

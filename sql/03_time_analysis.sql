@@ -6,7 +6,7 @@ WITH hourly AS (
   FROM collisions_clean
   WHERE crash_datetime >= $start_date
     AND crash_datetime <  $end_date
-    AND list_contains($boroughs, COALESCE(borough, 'UNKNOWN'))
+    AND list_contains($boroughs, COALESCE(borough_resolved, 'UNKNOWN'))
   GROUP BY hour_24
 )
 SELECT

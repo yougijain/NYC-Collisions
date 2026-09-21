@@ -4,5 +4,5 @@ SELECT
   MIN(crash_datetime)                                      AS min_datetime,
   MAX(crash_datetime)                                      AS max_datetime,
   COUNT(*)                                                 AS total_crashes,
-  list_sort(list(DISTINCT COALESCE(borough, 'UNKNOWN')))   AS boroughs
+  list_sort(list(DISTINCT COALESCE(borough_resolved, 'UNKNOWN')))   AS boroughs
 FROM collisions_clean;

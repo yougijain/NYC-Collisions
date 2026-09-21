@@ -36,12 +36,18 @@ Only the second is a finding.
 ## Data
 
 NYC Open Data, *Motor Vehicle Collisions — Crashes* (`h9gi-nx95`), cleaned by
-`scripts/clean.py`. Current build: 637,256 crashes, 2020-01-01 to 2026-06-11.
+`scripts/clean.py`.
+
+<!-- generated:dataset-headline -->
+The current build holds **637,256 crashes** through **2026-06-11**, of which 244,916 (38.4%) injured or killed someone: 326,869 people injured and 1,701 killed. Borough is known for 94.6% of them, against 69.3% as the source ships it.
+<!-- /generated:dataset-headline -->
+
 Live figures in [`dataset_facts.md`](dataset_facts.md).
 
 **Target.** `number_of_persons_injured > 0 or number_of_persons_killed > 0`.
 Fatal crashes are pooled with injury crashes rather than modelled separately:
-at 1,701 deaths in 637,256 crashes, a fatality model would be fitting noise.
+at well under three deaths per thousand crashes, a fatality model would be
+fitting noise.
 
 **Features.** Eleven, all nameable, from `models/features.py`:
 
@@ -66,18 +72,20 @@ casualty columns or the location columns must leave every feature unchanged.
 **Three time-ordered folds.** No random splitting: reporting practice drifts
 hard enough that a random split would badly flatter the model.
 
+<!-- generated:model-folds -->
 | Fold | Period | Crashes | Injury rate |
 |---|---|---|---|
 | Train | 2020-01-01 to 2023-12-31 | 423,970 | 0.358 |
 | Calibration | 2024-01-01 to 2024-12-31 | 91,316 | 0.441 |
 | Test | 2025-01-01 to 2026-06-11 | 121,970 | 0.432 |
+<!-- /generated:model-folds -->
 
 **Estimator.** `HistGradientBoostingClassifier` with native categorical
 support, so nothing is one-hot expanded and "Sedan" stays "Sedan" in
 everything the model reports about itself. Learning rate 0.06, 31 leaves,
 minimum 100 samples per leaf, L2 1.0; early stopping picks the round count
-and settles near 700. The curve is flat well before that — 200 rounds gives
-ROC-AUC 0.7929 against 0.7943 at 716 — so this is not a tuned number.
+and settles near 700. The curve is flat well before that — a third of those
+rounds gets within 0.002 ROC-AUC — so this is not a tuned number.
 
 **Calibration.** A single additive shift in log-odds, fitted on 2024. A full
 Platt scaling returns a slope of 0.967 and lands within 0.0001 Brier of it,
@@ -91,43 +99,47 @@ Measured on the test fold, which neither the model nor its calibration saw.
 Regenerate with `python scripts/train_injury_risk.py`; full output in
 [`../reports/injury_risk/results.md`](../reports/injury_risk/results.md).
 
+<!-- generated:model-metrics -->
 | Predictor | ROC-AUC | Brier | Log loss | Mean predicted | Brier skill |
 |---|---|---|---|---|---|
-| Borough × hour base rate | 0.5491 | 0.2475 | 0.6886 | 0.369 | — |
-| Gradient boosting (uncalibrated) | 0.7943 | 0.1862 | 0.5507 | 0.366 | +24.8% |
-| **Gradient boosting** | **0.7943** | **0.1812** | **0.5378** | **0.423** | **+26.8%** |
+| Borough × hour base rate | 0.5425 | 0.2478 | 0.6891 | 0.371 | — |
+| Gradient boosting (uncalibrated) | 0.7946 | 0.1862 | 0.5504 | 0.365 | +24.9% |
+| **Gradient boosting** | **0.7946** | **0.1811** | **0.5373** | **0.423** | **+26.9%** |
 
 Observed injury rate on the test fold: 0.432.
+<!-- /generated:model-metrics -->
 
 **The baseline is the point of comparison.** Borough and hour are one SQL
-query, and they carry almost no signal: ROC-AUC 0.549, barely better than a
-coin flip. That is worth knowing on its own — *when* and *which borough* tell
+query, and they carry almost no signal, barely beating a coin flip. That is
+worth knowing on its own — *when* and *which borough* tell
 you very little about whether a crash hurt someone. What the vehicles were
 tells you a great deal.
 
 **Brier is the number that matters** here, because the watchlist subtracts
 predicted rates from observed ones and so depends on the probabilities being
-right, not just ordered right. Calibration takes Brier from 0.1862 to 0.1812
-while leaving ROC-AUC untouched to four places — a level shift is monotone,
+right, not just ordered right. Calibration improves Brier measurably while
+leaving ROC-AUC untouched to four places — a level shift is monotone,
 so it cannot reorder anything. That is the entire difference between the two
 model rows.
 
 **What the model is using**, by test ROC-AUC lost when each feature is
 shuffled:
 
+<!-- generated:feature-importance -->
 | Feature | AUC drop |
 |---|---|
-| `vehicle_2` | 0.0975 |
-| `factor_2` | 0.0955 |
-| `factor_1` | 0.0734 |
-| `vehicle_1` | 0.0522 |
-| `road_class` | 0.0296 |
-| `borough` | 0.0056 |
-| `hour` | 0.0051 |
+| `factor_2` | 0.0975 |
+| `vehicle_2` | 0.0914 |
+| `factor_1` | 0.0735 |
+| `vehicle_1` | 0.0527 |
+| `road_class` | 0.0297 |
+| `borough` | 0.0052 |
 | `vehicle_count` | 0.0051 |
+| `hour` | 0.0048 |
 | `month` | 0.0024 |
-| `at_intersection` | 0.0011 |
-| `weekday` | 0.0005 |
+| `at_intersection` | 0.0012 |
+| `weekday` | 0.0004 |
+<!-- /generated:feature-importance -->
 
 What was hit and why dominates; when and where barely register. The injury
 rate runs from 0.135 when the first vehicle is an ambulance to 0.891 when it
@@ -199,12 +211,14 @@ the model has left.
 is a weaker finding than one with 400 crashes and 15 points, so sites are
 ordered by the conservative end of a 95% interval rather than by the estimate,
 on top of a hard minimum of 25 crashes. `excess_z` is published alongside so a
-reader can see the arithmetic: 55 of 544 sites clear z = 1.96, against roughly
-14 expected by chance at that many comparisons. The head of the list is
-signal; the tail is a screening queue, not a verdict.
+reader can see the arithmetic. The head of the list is signal; the tail is a
+screening queue, not a verdict.
 
-Current build: 544 sites over 413,780 scored crashes, 2022-01-01 to
-2026-06-11. Regenerate with `python scripts/build_watchlist.py`.
+<!-- generated:watchlist-scope -->
+Keying sites direction-free merges 94,433 apparent intersections into 63,132 real ones. The current build lists 544 of them, over 413,780 scored crashes from 2022-01-01 to 2026-06-11, with 57 above z = 1.96 against roughly 14 expected by chance.
+<!-- /generated:watchlist-scope -->
+
+Regenerate with `python scripts/build_watchlist.py`.
 
 ## Reproducing
 

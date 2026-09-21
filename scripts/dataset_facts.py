@@ -66,7 +66,9 @@ def collect(source: str = None) -> Dict[str, Any]:
             COUNT(*) FILTER (
                 WHERE on_street_name    IS NOT NULL
                   AND cross_street_name IS NOT NULL)       AS at_intersection,
-            COUNT(DISTINCT borough)                        AS boroughs
+            COUNT(DISTINCT borough)                        AS boroughs,
+            COUNT(borough)                                 AS borough_at_source,
+            COUNT(borough_resolved)                        AS borough_resolved
         FROM {db.TABLE_NAME}
     """).df().iloc[0]
     connection.close()
@@ -85,6 +87,10 @@ def collect(source: str = None) -> Dict[str, Any]:
         "injury_crash_rate": round(int(row["injury_crashes"]) / total, 4),
         "geolocated_rate": round(int(row["geolocated"]) / total, 4),
         "at_intersection_rate": round(int(row["at_intersection"]) / total, 4),
+        "borough_known_at_source": round(int(row["borough_at_source"]) / total, 4),
+        "borough_known_after_resolution": round(
+            int(row["borough_resolved"]) / total, 4
+        ),
     }
     built = provenance(resolved)
     facts["dataset_version"] = built["dataset_version"]
@@ -110,6 +116,11 @@ def render(facts: Dict[str, Any]) -> str:
         ),
         ("Records with coordinates", f"{facts['geolocated_rate']:.1%}"),
         ("Records at a named intersection", f"{facts['at_intersection_rate']:.1%}"),
+        (
+            "Borough known",
+            f"{facts['borough_known_after_resolution']:.1%} "
+            f"({facts['borough_known_at_source']:.1%} at source)",
+        ),
         ("Dataset version", str(facts["dataset_version"] or "unstamped")),
         ("Build timestamp", built),
     ]

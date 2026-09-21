@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 # make newly cleaned rows disagree with rows already published.
 #   1  initial release
 #   2  reconcile the Socrata cross-street/off-street swap
-DATASET_VERSION = 2
+#   3  add borough_resolved, inferred from coordinates where the source is blank
+DATASET_VERSION = 3
 
 # Column order of the published dataset.
 CANONICAL_COLUMNS: List[str] = [

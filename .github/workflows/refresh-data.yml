@@ -112,6 +112,7 @@ jobs:
         run: |
           python scripts/train_injury_risk.py
           python scripts/build_watchlist.py
+          python scripts/sync_docs.py
 
       - name: Commit the figures and scores
         run: |
@@ -123,7 +124,9 @@ jobs:
                   data/clean/injury_watchlist.csv \
                   data/clean/injury_risk_factors.csv \
                   data/clean/watchlist_summary.json \
-                  reports/injury_risk/
+                  reports/injury_risk/ \
+                  README.md \
+                  docs/model_card.md
 
           if git diff --cached --quiet; then
             echo "Figures unchanged."
