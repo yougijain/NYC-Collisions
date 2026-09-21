@@ -15,6 +15,7 @@ This module deliberately does not import streamlit so the tests and the
 notebook can use it directly.
 """
 
+import json
 import logging
 import os
 import re
@@ -39,9 +40,17 @@ RELEASE_URL = (
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SQL_DIR = PROJECT_ROOT / "sql"
-BUILT_PATH = PROJECT_ROOT / "data" / "clean" / "collisions.parquet"
-SEED_PATH = PROJECT_ROOT / "data" / "clean" / "collisions_seed.parquet"
+CLEAN_DIR = PROJECT_ROOT / "data" / "clean"
+BUILT_PATH = CLEAN_DIR / "collisions.parquet"
+SEED_PATH = CLEAN_DIR / "collisions_seed.parquet"
 CACHE_PATH = PROJECT_ROOT / ".cache" / ASSET_NAME
+
+# The watchlist is committed rather than published as a Release asset: it is
+# a few hundred rows, it is the output worth arguing with, and a CSV diff
+# shows a site entering or leaving the list between builds.
+WATCHLIST_PATH = CLEAN_DIR / "injury_watchlist.csv"
+FACTOR_RISK_PATH = CLEAN_DIR / "injury_risk_factors.csv"
+WATCHLIST_SUMMARY_PATH = CLEAN_DIR / "watchlist_summary.json"
 
 # Re-download the Release asset at most this often.
 CACHE_TTL_SECONDS = 6 * 60 * 60
@@ -205,3 +214,28 @@ def filter_params(
         "boroughs": list(boroughs),
         "row_limit": int(row_limit),
     }
+
+
+def _read_csv(path: Path) -> pd.DataFrame:
+    """Read a committed CSV, or an empty frame if it has not been built yet."""
+    if not path.exists():
+        logger.warning(f"{path.name} is missing; run scripts/build_watchlist.py")
+        return pd.DataFrame()
+    return pd.read_csv(path)
+
+
+def load_watchlist() -> pd.DataFrame:
+    """The ranked intersections, or an empty frame before the first build."""
+    return _read_csv(WATCHLIST_PATH)
+
+
+def load_factor_risk() -> pd.DataFrame:
+    """Contributing factors by predicted injury risk."""
+    return _read_csv(FACTOR_RISK_PATH)
+
+
+def load_watchlist_summary() -> Dict[str, Any]:
+    """The window, the folds and the headline numbers behind the watchlist."""
+    if not WATCHLIST_SUMMARY_PATH.exists():
+        return {}
+    return json.loads(WATCHLIST_SUMMARY_PATH.read_text(encoding="utf-8"))

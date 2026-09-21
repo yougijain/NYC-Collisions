@@ -1,5 +1,9 @@
 {
-  "dataset": "/tmp/claude-0/-home-user-NYC-Collisions/befd308b-1021-5432-bafe-99f47f1f1afc/scratchpad/collisions_corrected.parquet",
+  "dataset": {
+    "name": "collisions_corrected.parquet",
+    "dataset_version": 2,
+    "built_at": "2026-09-21T00:56:21.115262+00:00"
+  },
   "split": {
     "calibration_start": "2024-01-01",
     "test_start": "2025-01-01",

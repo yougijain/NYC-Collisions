@@ -28,9 +28,11 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "app"))
 
 import db  # noqa: E402
+from build_dataset import provenance  # noqa: E402
 from models import injury_risk as IR  # noqa: E402
 
 logging.basicConfig(
@@ -242,7 +244,7 @@ def run(
         IR.MODEL_NAME: model.predict_proba(split.X_test),
     }
     results = {
-        "dataset": str(source),
+        "dataset": provenance(source),
         "split": split.describe(),
         "model": model.metadata,
         "metrics": IR.compare(split.y_test, predictions),
