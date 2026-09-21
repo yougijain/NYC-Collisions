@@ -189,3 +189,7 @@ cython_debug/
 
 # Local virtualenv
 .venv/
+
+# Fitted models. Regenerate with scripts/train_injury_risk.py; the metrics
+# and the plot under reports/ are the part worth reviewing.
+models/artifacts/

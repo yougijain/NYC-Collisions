@@ -18,7 +18,7 @@ jobs:
           python-version: "3.11"
           cache: pip
 
-      - run: pip install -r requirements.txt
+      - run: pip install -r requirements-ml.txt
 
       # The suite mocks all network calls and runs against the committed
       # seed dataset, so it needs no secrets and no API access. Validating
