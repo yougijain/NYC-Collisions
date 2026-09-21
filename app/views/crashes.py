@@ -5,6 +5,7 @@ import pydeck as pdk
 import streamlit as st
 
 import narrative
+import palette
 from views.common import MAP_POINT_LIMIT, query, say
 
 
@@ -35,26 +36,32 @@ def render(con, params: dict, metrics: pd.Series, basemap) -> None:
 
     by_borough = query(con, "02_aggregate.sql", params)
     st.subheader("Where people get hurt")
-    st.bar_chart(by_borough.set_index("borough")["total_injuries"])
+    st.bar_chart(by_borough.set_index("borough")["total_injuries"],
+                 color=palette.SERIES)
     say(narrative.borough_takeaway(by_borough))
 
     by_hour = query(con, "03_time_analysis.sql", params)
     st.subheader("When crashes happen")
-    st.line_chart(by_hour.set_index("hour_label")["crash_count"])
+    st.line_chart(by_hour.set_index("hour_label")["crash_count"],
+                  color=palette.SERIES)
     say(narrative.hour_takeaway(by_hour))
 
     trends = narrative.drop_partial_month(query(con, "04_trends.sql", params))
     trends["month"] = pd.to_datetime(trends["month"])
 
     st.subheader("Crashes and injuries, month by month")
-    st.line_chart(trends.set_index("month")[["crash_count", "total_injuries"]])
+    st.line_chart(
+        trends.set_index("month")[["crash_count", "total_injuries"]],
+        color=[palette.SERIES, palette.SERIES_ALT],
+    )
     say(narrative.trend_takeaway(trends))
 
     # On its own axis. Sharing one with injuries, which run two orders of
     # magnitude higher, flattened this into a line along the bottom -- the
     # series about people dying was the one you could not see.
     st.subheader("People killed, month by month")
-    st.line_chart(trends.set_index("month")["total_fatalities"], color="#c1272d")
+    st.line_chart(trends.set_index("month")["total_fatalities"],
+                  color=palette.SERIES)
     say(narrative.fatality_takeaway(trends))
 
     st.subheader("Where the harmful crashes are")
@@ -76,12 +83,11 @@ def _heatmap(points: pd.DataFrame, basemap) -> None:
         radius_pixels=30,   # radius of influence per point
         intensity=1.4,      # heat strength multiplier
         threshold=0.3,      # minimum normalized weight to render
-        color_range=[       # gradient stops [R, G, B, A]
-            [0,   0,   0,   0],
-            [0,   255, 0,   70],
-            [255, 255, 0,   95],
-            [255, 0,   0,   130],
-        ],
+        # One hue, light to dark. The green-yellow-red gradient this
+        # replaces was a rainbow encoding a single continuous quantity:
+        # not perceptually ordered, so its yellow band read as a peak that
+        # was not there.
+        color_range=palette.DENSITY_RAMP,
     )
     # Drawn only when there is no Mapbox token to supply a basemap.
     tiles = pdk.Layer(

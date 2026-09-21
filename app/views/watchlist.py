@@ -5,6 +5,7 @@ import pydeck as pdk
 import altair as alt
 import streamlit as st
 
+import palette
 from views.common import watchlist_data
 
 # Enough of the watchlist to see on a map without it becoming a blur.
@@ -42,8 +43,8 @@ def _map(sites: pd.DataFrame, basemap) -> None:
                 top,
                 get_position=["longitude", "latitude"],
                 get_radius="radius",
-                get_fill_color=[255, 70, 40, 150],
-                get_line_color=[255, 255, 255, 200],
+                get_fill_color=palette.rgba(palette.FLAGGED, 150),
+                get_line_color=palette.rgba(palette.SURFACE, 220),
                 line_width_min_pixels=1,
                 stroked=True,
                 pickable=True,
@@ -190,7 +191,7 @@ def render(boroughs: list[str], basemap) -> None:
     # alphabetically, and the whole point of this chart is the order.
     st.altair_chart(
         alt.Chart(factors)
-        .mark_bar(color="#e4572e")
+        .mark_bar(color=palette.SERIES)
         .encode(
             x=alt.X("predicted_rate:Q",
                     axis=alt.Axis(format="%", title="Predicted injury rate")),

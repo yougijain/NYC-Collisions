@@ -14,6 +14,7 @@ import pandas as pd
 import streamlit as st
 
 import db
+import palette
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 METRICS_PATH = ROOT / "reports" / "injury_risk" / "metrics.json"
@@ -173,6 +174,7 @@ def render() -> None:
         st.bar_chart(
             pd.DataFrame(importance).set_index("feature")["auc_drop"],
             horizontal=True,
+            color=palette.SERIES,
         )
         st.caption(
             "Test ROC-AUC lost when each feature is shuffled. What was hit "
