@@ -27,7 +27,7 @@ env:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +38,8 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        # The ML extras are needed to rescore the watchlist below.
+        run: pip install -r requirements-ml.txt
 
       - name: Fetch the current dataset
         # Incremental builds need the previous Parquet; a fresh runner has
@@ -101,20 +102,35 @@ jobs:
           python scripts/dataset_facts.py
           python scripts/data_quality_report.py
 
-      - name: Commit the figures
+      - name: Rescore the injury risk model
+        # Six model fits: one for the reported metrics and five rolling-origin
+        # folds for the watchlist. A few minutes a week, against a model card
+        # that would otherwise quote a build from last year -- which is the
+        # failure this pipeline exists to prevent.
+        env:
+          NYC_COLLISIONS_DATA: ${{ env.ASSET }}
+        run: |
+          python scripts/train_injury_risk.py
+          python scripts/build_watchlist.py
+
+      - name: Commit the figures and scores
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/dataset_facts.json \
                   docs/dataset_facts.md \
-                  data/clean/data_quality_report.txt
+                  data/clean/data_quality_report.txt \
+                  data/clean/injury_watchlist.csv \
+                  data/clean/injury_risk_factors.csv \
+                  data/clean/watchlist_summary.json \
+                  reports/injury_risk/
 
           if git diff --cached --quiet; then
             echo "Figures unchanged."
             exit 0
           fi
 
-          git commit -m "chore(data): refresh published figures for the latest build"
+          git commit -m "chore(data): refresh figures and rescore the watchlist"
           # The scheduled run is the only writer, but the branch can still
           # have moved between checkout and here.
           git pull --rebase origin "${GITHUB_REF_NAME}"

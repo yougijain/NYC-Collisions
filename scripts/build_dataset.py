@@ -62,6 +62,36 @@ def stamped_version(path: Path) -> int:
         return 0
 
 
+def provenance(source: str) -> dict:
+    """Identify the build an artifact was generated from.
+
+    By version and build time rather than by path: a generated file is
+    committed, and the absolute path it happened to be built from is both
+    meaningless to everyone else and different on every machine, so it
+    would churn the diff on every run.
+
+    Args:
+        source: Parquet path or URL.
+
+    Returns:
+        The file's name, its stamped dataset version and its build time.
+    """
+    path = Path(source)
+    record = {"name": path.name, "dataset_version": None, "built_at": None}
+    if not path.exists():
+        return record
+
+    try:
+        metadata = pq.read_schema(path).metadata or {}
+    except (OSError, pa.ArrowInvalid):
+        return record
+
+    built_at = metadata.get(BUILT_AT_KEY)
+    record["dataset_version"] = stamped_version(path) or None
+    record["built_at"] = built_at.decode() if built_at else None
+    return record
+
+
 def read_existing(path: Path) -> Optional[pd.DataFrame]:
     """Load the current dataset, or None if it cannot be built on.
 

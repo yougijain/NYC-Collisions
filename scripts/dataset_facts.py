@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT / "app"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import db  # noqa: E402
-from build_dataset import BUILT_AT_KEY, stamped_version  # noqa: E402
+from build_dataset import provenance  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,22 +38,6 @@ SOURCE_URL = (
     "https://data.cityofnewyork.us/Public-Safety/"
     "Motor-Vehicle-Collisions-Crashes/h9gi-nx95"
 )
-
-
-def _build_metadata(source: str) -> Dict[str, Any]:
-    """Read the version and build time stamped into a local Parquet file."""
-    path = Path(source)
-    if not path.exists():
-        return {"dataset_version": None, "built_at": None}
-
-    import pyarrow.parquet as pq
-
-    metadata = pq.read_schema(path).metadata or {}
-    built_at = metadata.get(BUILT_AT_KEY)
-    return {
-        "dataset_version": stamped_version(path) or None,
-        "built_at": built_at.decode() if built_at else None,
-    }
 
 
 def collect(source: str = None) -> Dict[str, Any]:
@@ -102,7 +86,9 @@ def collect(source: str = None) -> Dict[str, Any]:
         "geolocated_rate": round(int(row["geolocated"]) / total, 4),
         "at_intersection_rate": round(int(row["at_intersection"]) / total, 4),
     }
-    facts.update(_build_metadata(resolved))
+    built = provenance(resolved)
+    facts["dataset_version"] = built["dataset_version"]
+    facts["built_at"] = built["built_at"]
     return facts
 
 
