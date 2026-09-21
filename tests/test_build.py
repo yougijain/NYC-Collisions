@@ -134,3 +134,52 @@ def test_the_facts_render_as_a_readable_table(dataset_path):
     rendered = dataset_facts.render(facts)
     assert f"{facts['rows']:,}" in rendered
     assert facts["first_crash"][:10] in rendered
+
+
+# --- documentation that quotes generated figures -----------------------
+
+def test_the_documentation_matches_the_generated_figures():
+    """The README and the model card quote about thirty numbers. If one is
+    edited by hand instead of regenerated, this is what notices."""
+    import sync_docs
+
+    assert sync_docs.sync(check=True) == []
+
+
+def test_every_marker_in_the_docs_has_a_block_behind_it():
+    import sync_docs
+
+    blocks = set(sync_docs.build_blocks())
+    for path in sync_docs.TARGETS:
+        referenced = set(sync_docs.markers_in(path.read_text(encoding="utf-8")))
+        assert referenced, f"{path.name} references no generated blocks"
+        assert referenced <= blocks
+
+
+def test_a_marker_with_no_block_is_an_error(tmp_path):
+    import sync_docs
+
+    doc = tmp_path / "stray.md"
+    doc.write_text(
+        "<!-- generated:not-a-block -->\nx\n<!-- /generated:not-a-block -->\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(KeyError, match="not-a-block"):
+        sync_docs.sync(targets=[doc])
+
+
+def test_rewriting_a_block_leaves_the_prose_around_it_alone(tmp_path):
+    import sync_docs
+
+    doc = tmp_path / "page.md"
+    doc.write_text(
+        "before\n\n<!-- generated:dataset-headline -->\nstale\n"
+        "<!-- /generated:dataset-headline -->\n\nafter\n",
+        encoding="utf-8",
+    )
+    sync_docs.sync(targets=[doc])
+
+    written = doc.read_text(encoding="utf-8")
+    assert written.startswith("before\n")
+    assert written.endswith("after\n")
+    assert "stale" not in written

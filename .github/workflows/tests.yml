@@ -25,3 +25,8 @@ jobs:
       # the published dataset is the refresh workflow's job; a code change
       # should not go red because the city had a bad week.
       - run: pytest tests/ -q
+
+      # The README and the model card quote generated figures. This fails
+      # if someone edits a number by hand instead of regenerating it.
+      - name: Check the documentation matches the generated figures
+        run: python scripts/sync_docs.py --check
