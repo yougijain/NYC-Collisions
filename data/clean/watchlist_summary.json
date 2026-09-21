@@ -1,0 +1,63 @@
+{
+  "window": {
+    "from": "2022-01-01",
+    "to": "2026-06-11"
+  },
+  "min_site_crashes": 25,
+  "folds": [
+    {
+      "scored_year": 2022,
+      "train_rows": 112918,
+      "calibration_year": 2021,
+      "scored_rows": 103887,
+      "boosting_rounds": 233,
+      "level_shift": 0.2103
+    },
+    {
+      "scored_year": 2023,
+      "train_rows": 223476,
+      "calibration_year": 2022,
+      "scored_rows": 96607,
+      "boosting_rounds": 369,
+      "level_shift": 0.2192
+    },
+    {
+      "scored_year": 2024,
+      "train_rows": 327363,
+      "calibration_year": 2023,
+      "scored_rows": 91316,
+      "boosting_rounds": 345,
+      "level_shift": 0.307
+    },
+    {
+      "scored_year": 2025,
+      "train_rows": 423970,
+      "calibration_year": 2024,
+      "scored_rows": 85546,
+      "boosting_rounds": 449,
+      "level_shift": 0.3385
+    },
+    {
+      "scored_year": 2026,
+      "train_rows": 515286,
+      "calibration_year": 2025,
+      "scored_rows": 36424,
+      "boosting_rounds": 425,
+      "level_shift": 0.2767
+    }
+  ],
+  "sites": 544,
+  "scored_crashes": 413780,
+  "crashes_at_listed_sites": 20777,
+  "worst_site": "AVENUE U @ GERRITSEN AVENUE",
+  "worst_excess": 0.3499,
+  "median_excess": 0.011,
+  "top_decile_excess": 0.1418,
+  "sites_above_z_95": 55,
+  "sites_above_z_95_by_chance": 13.6,
+  "dataset": {
+    "name": "collisions_corrected.parquet",
+    "dataset_version": 2,
+    "built_at": "2026-09-21T00:56:21.115262+00:00"
+  }
+}
