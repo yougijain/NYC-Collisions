@@ -1,8 +1,8 @@
 {
   "dataset": {
-    "name": "collisions_v4.parquet",
+    "name": "collisions.parquet",
     "dataset_version": 4,
-    "built_at": "2026-09-21T04:40:42.176604+00:00"
+    "built_at": "2026-09-21T14:20:26.455719+00:00"
   },
   "split": {
     "calibration_start": "2024-01-01",

@@ -17,7 +17,7 @@ describe the same build.
 | Records at a named intersection | 49.8% |
 | Borough known | 94.6% (69.3% at source) |
 | Dataset version | 4 |
-| Build timestamp | 2026-09-21T04:40:42.176604+00:00 |
+| Build timestamp | 2026-09-21T14:20:26.455719+00:00 |
 
 Source: [NYC Open Data - Motor Vehicle Collisions: Crashes (h9gi-nx95)](https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95).
-Generated 2026-09-21T04:40:54+00:00.
+Generated 2026-09-21T14:24:03+00:00.
