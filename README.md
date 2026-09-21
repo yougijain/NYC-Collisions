@@ -84,8 +84,8 @@ calibration saw:
 | Predictor | ROC-AUC | Brier | Log loss | Mean predicted | Brier skill |
 |---|---|---|---|---|---|
 | Borough × hour base rate | 0.5425 | 0.2478 | 0.6891 | 0.371 | — |
-| Gradient boosting (uncalibrated) | 0.7946 | 0.1862 | 0.5504 | 0.365 | +24.9% |
-| **Gradient boosting** | **0.7946** | **0.1811** | **0.5373** | **0.423** | **+26.9%** |
+| Gradient boosting (uncalibrated) | 0.7947 | 0.1861 | 0.5504 | 0.365 | +24.9% |
+| **Gradient boosting** | **0.7947** | **0.1811** | **0.5374** | **0.423** | **+26.9%** |
 
 Observed injury rate on the test fold: 0.432.
 <!-- /generated:model-metrics -->
@@ -135,17 +135,17 @@ second tab turns it into a list of intersections, ranked by one claim:
 > themselves account for
 
 <!-- generated:watchlist-headline -->
-**544 intersections** with at least 25 crashes between 2022-01-01 and 2026-06-11 qualify, over 413,780 scored crashes. The worst sits **31.7 points** above what its crash mix predicts; the top decile sits 14.2 points above. 57 clear z = 1.96, against roughly 14 expected from chance across that many sites — so the head of the list is signal and the tail is a screening queue, not a verdict.
+**1,093 intersections** with at least 25 crashes between 2022-01-01 and 2026-06-11 qualify, over 413,780 scored crashes. The worst sits **27.6 points** above what its crash mix predicts; the top decile sits 13.7 points above. 102 clear z = 1.96, against roughly 27 expected from chance across that many sites — so the head of the list is signal and the tail is a screening queue, not a verdict.
 <!-- /generated:watchlist-headline -->
 
 <!-- generated:watchlist-examples -->
 | Intersection | Borough | Crashes | Injured | Expected | Excess |
 |---|---|---|---|---|---|
-| Avenue U @ Gerritsen Avenue | Brooklyn | 26 | 88.5% | 54.7% | +31.7 pts |
-| Church Avenue @ Flatbush Avenue | Brooklyn | 31 | 83.9% | 53.9% | +27.9 pts |
-| Atlantic Avenue @ Crescent Street | Brooklyn | 30 | 73.3% | 43.7% | +27.6 pts |
+| 2 Avenue @ East 40 Street | Manhattan | 31 | 87.1% | 57.5% | +27.6 pts |
+| East 161 Street @ Melrose Avenue | Bronx | 53 | 77.4% | 53.3% | +22.1 pts |
 | Cross Bronx Expressway @ Randall Avenue | Bronx | 28 | 71.4% | 42.4% | +27.0 pts |
-| East 165 Street @ Grand Concourse | Bronx | 27 | 81.5% | 54.4% | +25.0 pts |
+| East 149 Street @ Park Avenue | Bronx | 31 | 64.5% | 37.7% | +24.8 pts |
+| Avenue D @ Kings Highway | Brooklyn | 38 | 73.7% | 47.7% | +24.0 pts |
 <!-- /generated:watchlist-examples -->
 
 Three things make that number mean something:
@@ -167,7 +167,7 @@ The same scoring produces the factor table, which is the part a non-technical
 reader repeats back.
 
 <!-- generated:factor-examples -->
-Crashes where the officer wrote *Pedestrian/Bicyclist/Other Pedestrian Error/Confusion* injure someone 83.3% of the time, against 13.0% for *Oversized Vehicle*. Predicted and observed track within a couple of points across all 31 factors, which is the calibration check worth trusting most.
+Crashes where the officer wrote *Lost Consciousness* injure someone 83.4% of the time, against 13.0% for *Oversized Vehicle*. Predicted and observed track within a couple of points across all 31 factors, which is the calibration check worth trusting most.
 <!-- /generated:factor-examples -->
 
 ```bash

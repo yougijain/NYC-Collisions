@@ -103,8 +103,8 @@ Regenerate with `python scripts/train_injury_risk.py`; full output in
 | Predictor | ROC-AUC | Brier | Log loss | Mean predicted | Brier skill |
 |---|---|---|---|---|---|
 | Borough × hour base rate | 0.5425 | 0.2478 | 0.6891 | 0.371 | — |
-| Gradient boosting (uncalibrated) | 0.7946 | 0.1862 | 0.5504 | 0.365 | +24.9% |
-| **Gradient boosting** | **0.7946** | **0.1811** | **0.5373** | **0.423** | **+26.9%** |
+| Gradient boosting (uncalibrated) | 0.7947 | 0.1861 | 0.5504 | 0.365 | +24.9% |
+| **Gradient boosting** | **0.7947** | **0.1811** | **0.5374** | **0.423** | **+26.9%** |
 
 Observed injury rate on the test fold: 0.432.
 <!-- /generated:model-metrics -->
@@ -128,17 +128,17 @@ shuffled:
 <!-- generated:feature-importance -->
 | Feature | AUC drop |
 |---|---|
-| `factor_2` | 0.0975 |
-| `vehicle_2` | 0.0914 |
-| `factor_1` | 0.0735 |
-| `vehicle_1` | 0.0527 |
-| `road_class` | 0.0297 |
-| `borough` | 0.0052 |
-| `vehicle_count` | 0.0051 |
-| `hour` | 0.0048 |
-| `month` | 0.0024 |
-| `at_intersection` | 0.0012 |
-| `weekday` | 0.0004 |
+| `factor_2` | 0.0981 |
+| `vehicle_2` | 0.0918 |
+| `factor_1` | 0.0733 |
+| `vehicle_1` | 0.0524 |
+| `road_class` | 0.0296 |
+| `borough` | 0.0054 |
+| `vehicle_count` | 0.0052 |
+| `hour` | 0.0050 |
+| `month` | 0.0023 |
+| `at_intersection` | 0.0013 |
+| `weekday` | 0.0003 |
 <!-- /generated:feature-importance -->
 
 What was hit and why dominates; when and where barely register. The injury
@@ -215,7 +215,7 @@ reader can see the arithmetic. The head of the list is signal; the tail is a
 screening queue, not a verdict.
 
 <!-- generated:watchlist-scope -->
-Keying sites direction-free merges 94,433 apparent intersections into 63,132 real ones. The current build lists 544 of them, over 413,780 scored crashes from 2022-01-01 to 2026-06-11, with 57 above z = 1.96 against roughly 14 expected by chance.
+Keying sites direction-free merges 65,544 apparent intersections into 40,695 real ones. The current build lists 1,093 of them, over 413,780 scored crashes from 2022-01-01 to 2026-06-11, with 102 above z = 1.96 against roughly 27 expected by chance.
 <!-- /generated:watchlist-scope -->
 
 Regenerate with `python scripts/build_watchlist.py`.
