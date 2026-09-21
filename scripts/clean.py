@@ -17,9 +17,15 @@ rather than merging new rows into stale ones.
 
 import logging
 import re
+import sys
+from pathlib import Path
 from typing import List
 
 import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import street_names  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +34,9 @@ logger = logging.getLogger(__name__)
 #   1  initial release
 #   2  reconcile the Socrata cross-street/off-street swap
 #   3  add borough_resolved, inferred from coordinates where the source is blank
-DATASET_VERSION = 3
+#   4  canonicalise street names, which were splitting one junction into
+#      as many as fourteen
+DATASET_VERSION = 4
 
 # Column order of the published dataset.
 CANONICAL_COLUMNS: List[str] = [
@@ -70,10 +78,11 @@ SPARSE_COLUMNS: List[str] = [
 # Redundant with latitude/longitude, and a nested dict over the API.
 REDUNDANT_COLUMNS: List[str] = ["location"]
 
-# Free-text location fields. The source pads them to a fixed width and
-# separates a house number from its street with a run of spaces, so
-# "BARUCH DRIVE   " and "1683      BOSTON ROAD" both need collapsing before
-# two records at one intersection will group together.
+# Free-text location fields. The source pads them to a fixed width,
+# separates a house number from its street with a run of spaces, and
+# cannot decide between "Belt Pkwy", "BELT PARKWAY" and "belt parkway",
+# so all of it is flattened before two records at one intersection will
+# group together.
 STREET_COLUMNS: List[str] = [
     "on_street_name",
     "cross_street_name",
@@ -111,26 +120,23 @@ def is_api_payload(columns) -> bool:
 
 
 def normalize_street_names(df: pd.DataFrame) -> pd.DataFrame:
-    """Collapse the padding the source puts in and around street names.
+    """Reduce every street name to one spelling.
+
+    See scripts/street_names.py for why: the source writes a single
+    junction as many as fourteen ways, and each one keys as a different
+    intersection.
 
     Args:
         df: A column-normalized frame.
 
     Returns:
-        A copy whose street columns are single-spaced and stripped, with
-        blanks turned into nulls.
+        A copy whose street columns carry canonical names, with blanks
+        turned into nulls.
     """
     out = df.copy()
     for col in STREET_COLUMNS:
-        if col not in out.columns:
-            continue
-        cleaned = (
-            out[col]
-            .astype("string")
-            .str.replace(r"\s+", " ", regex=True)
-            .str.strip()
-        )
-        out[col] = cleaned.replace("", pd.NA)
+        if col in out.columns:
+            out[col] = street_names.canonical_series(out[col])
     return out
 
 

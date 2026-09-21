@@ -274,3 +274,13 @@ def test_the_committed_watchlist_is_readable():
     assert summary["sites"] == len(listed)
     assert (listed["crashes"] >= summary["min_site_crashes"]).all()
     assert np.isfinite(listed["excess"]).all()
+
+
+def test_no_junction_is_listed_twice(dataset_path):
+    """Before street names were canonicalised, 104 of 544 watchlist rows
+    were the same corner spelled differently, with its crashes split
+    between them."""
+    import db
+
+    listed = db.load_watchlist()
+    assert not listed["site"].duplicated().any()

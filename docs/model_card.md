@@ -30,8 +30,9 @@ Only the second is a finding.
   prediction about a crash is not a judgement about a driver.
 - **Enforcement targeting.** Reported crashes are not a census of crashes,
   and the reporting gaps are not evenly spread (see Limitations).
-- **Comparing sites on absolute danger.** There is no exposure denominator,
-  so a busy intersection and a dangerous one look alike.
+- **Comparing sites on absolute danger.** The exposure denominator covers a
+  third of the watchlist, so for most sites a busy intersection and a
+  dangerous one still look alike (see Limitations).
 
 ## Data
 
@@ -103,8 +104,8 @@ Regenerate with `python scripts/train_injury_risk.py`; full output in
 | Predictor | ROC-AUC | Brier | Log loss | Mean predicted | Brier skill |
 |---|---|---|---|---|---|
 | Borough × hour base rate | 0.5425 | 0.2478 | 0.6891 | 0.371 | — |
-| Gradient boosting (uncalibrated) | 0.7946 | 0.1862 | 0.5504 | 0.365 | +24.9% |
-| **Gradient boosting** | **0.7946** | **0.1811** | **0.5373** | **0.423** | **+26.9%** |
+| Gradient boosting (uncalibrated) | 0.7947 | 0.1861 | 0.5504 | 0.365 | +24.9% |
+| **Gradient boosting** | **0.7947** | **0.1811** | **0.5374** | **0.423** | **+26.9%** |
 
 Observed injury rate on the test fold: 0.432.
 <!-- /generated:model-metrics -->
@@ -128,17 +129,17 @@ shuffled:
 <!-- generated:feature-importance -->
 | Feature | AUC drop |
 |---|---|
-| `factor_2` | 0.0975 |
-| `vehicle_2` | 0.0914 |
-| `factor_1` | 0.0735 |
-| `vehicle_1` | 0.0527 |
-| `road_class` | 0.0297 |
-| `borough` | 0.0052 |
-| `vehicle_count` | 0.0051 |
-| `hour` | 0.0048 |
-| `month` | 0.0024 |
-| `at_intersection` | 0.0012 |
-| `weekday` | 0.0004 |
+| `factor_2` | 0.0981 |
+| `vehicle_2` | 0.0918 |
+| `factor_1` | 0.0733 |
+| `vehicle_1` | 0.0524 |
+| `road_class` | 0.0296 |
+| `borough` | 0.0054 |
+| `vehicle_count` | 0.0052 |
+| `hour` | 0.0050 |
+| `month` | 0.0023 |
+| `at_intersection` | 0.0013 |
+| `weekday` | 0.0003 |
 <!-- /generated:feature-importance -->
 
 What was hit and why dominates; when and where barely register. The injury
@@ -147,14 +148,35 @@ is an e-bike, and no amount of knowing the hour gets you that.
 
 ## Limitations
 
-**No exposure denominator.** This is the big one, and it is not fixable with
-this dataset. There are crashes here but no traffic counts, so a site with
-many crashes may simply be a site with many vehicles. Every rate here is per
-*crash*, never per vehicle passing through. NYC DOT publishes automated
-traffic volume counts; joining them would turn "crashes per crash" into
-"crashes per million vehicles", which is the number a traffic engineer
-actually wants. Until then, the watchlist ranks sites by residual injury risk
-given their crash mix, and that is all it ranks them by.
+**The exposure denominator is partial.** This is the big one. Every rate the
+model produces is per *crash* — of the crashes here, how many hurt somebody —
+because the collision data says nothing about how many vehicles passed
+through. A site with many crashes may simply be a site with many vehicles.
+
+NYC DOT's automated traffic volume counts (`7ym2-wayt`) supply the missing
+denominator for part of the city, and `models/exposure.py` joins them on.
+That converts this limitation from an assertion into a measurement:
+
+<!-- generated:exposure-coverage -->
+NYC DOT's automated traffic counts reach **425 of the 1,075 located sites** (39.5%): a recorder within 150m whose location text names one of the junction's own streets. Those sites see a median 14,314 vehicles a day past the counter, and a median 0.824 crashes that hurt someone per million vehicles.
+
+Ranking them by that rate rather than by crash mix gives a substantially different order — the two agree at a Spearman correlation of **0.27**. That is the distance between the two questions, in a number.
+
+It is also why the watchlist is not re-ranked by it. A recorder sits on one segment rather than across a junction, and 338 of the matched counters cover a single direction, roughly half the traffic on a two-way street; sort by crashes per vehicle and the head of the list is whichever junction has the most under-measured traffic. Counts are a median 10 years old, the oldest from 2007. So every row carries a grade for how much weight it can take — 46 high (the counter names both streets and covers both directions), 190 medium, 189 low — and the ranking stays with the crash-mix residual, which covers every site rather than a third of them.
+<!-- /generated:exposure-coverage -->
+
+Three things the join still does not measure, each carried on the row rather
+than buried here. A count is **one approach, not the junction**: traffic
+through an intersection is the sum over every arm, and a recorder sits on one
+segment, so a junction fed by four busy roads with a counter on the quietest
+will look worse than it is. **Most segments are counted in one direction**,
+so for a two-way street the figure is roughly half the traffic. And **the
+count is from one year, applied across the window**, which assumes the street
+did not change.
+
+So the watchlist still ranks sites by residual injury risk given their crash
+mix, and that is all it ranks them by. The per-vehicle rate is published
+beside it as a second lens, graded, for the sites that have one.
 
 **Reported crashes are not all crashes, and the gap moves.** The share of
 reported crashes that injured someone climbed from 0.296 in 2020 to 0.440 in
@@ -215,7 +237,7 @@ reader can see the arithmetic. The head of the list is signal; the tail is a
 screening queue, not a verdict.
 
 <!-- generated:watchlist-scope -->
-Keying sites direction-free merges 94,433 apparent intersections into 63,132 real ones. The current build lists 544 of them, over 413,780 scored crashes from 2022-01-01 to 2026-06-11, with 57 above z = 1.96 against roughly 14 expected by chance.
+Keying sites direction-free merges 65,544 apparent intersections into 40,695 real ones. The current build lists 1,093 of them, over 413,780 scored crashes from 2022-01-01 to 2026-06-11, with 102 above z = 1.96 against roughly 27 expected by chance.
 <!-- /generated:watchlist-scope -->
 
 Regenerate with `python scripts/build_watchlist.py`.

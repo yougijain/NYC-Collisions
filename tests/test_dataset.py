@@ -119,6 +119,29 @@ def test_intersections_are_identifiable(connection):
     assert paired / total > 0.25
 
 
+def test_one_junction_has_one_spelling(connection):
+    """The source wrote a single junction as many as fourteen ways, which
+    split its crashes across that many keys and listed it on the watchlist
+    more than once."""
+    variants = connection.execute(
+        f"""SELECT COUNT(*) FROM {db.TABLE_NAME}
+            WHERE on_street_name != upper(on_street_name)
+               OR cross_street_name != upper(cross_street_name)
+               OR off_street_name != upper(off_street_name)"""
+    ).fetchone()[0]
+    assert variants == 0
+
+
+def test_no_street_name_is_left_abbreviated(connection):
+    """An abbreviation surviving the clean would key as its own street."""
+    abbreviated = connection.execute(
+        f"""SELECT COUNT(*) FROM {db.TABLE_NAME}
+            WHERE regexp_matches(on_street_name,
+                  '(^| )(AVE?|ST|PL|BLVD|RD|PKWY|EXPY|LN|HWY)( |$)')"""
+    ).fetchone()[0]
+    assert abbreviated == 0
+
+
 def test_street_names_carry_no_padding(connection):
     """The source pads street names, which stops one intersection's records
     from grouping together."""

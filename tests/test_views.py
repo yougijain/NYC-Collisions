@@ -66,6 +66,52 @@ def test_the_method_tab_reads_the_generated_report():
     assert method.MODEL in metrics["metrics"]
 
 
+# --- the exposure section ----------------------------------------------
+
+def test_the_watchlist_reads_the_exposure_it_publishes():
+    from views import watchlist
+
+    exposure, summary = watchlist.exposure_data()
+    assert not exposure.empty
+    assert summary["matched"] == len(exposure)
+
+
+def test_exposure_boroughs_are_spelled_the_way_the_app_filters_them():
+    """The sidebar filters on the dataset's own labels. A watchlist that
+    wrote `Unknown` against a filter reading `UNKNOWN` emptied the tab
+    without erroring, which is the worst way for this to break."""
+    from views import watchlist
+
+    exposure, _ = watchlist.exposure_data()
+    sites, _, _ = watchlist.watchlist_data()
+    assert set(exposure["borough"]) <= set(sites["borough"])
+
+
+def test_the_watchlist_still_says_something_with_no_traffic_counts(monkeypatch):
+    """A fresh clone, or a build where the join was skipped. The caveat has
+    to fall back to the assertion rather than reaching into an empty
+    summary."""
+    import pandas as pd
+
+    from views import watchlist
+
+    monkeypatch.setattr(watchlist, "exposure_data",
+                        lambda: (pd.DataFrame(), {}))
+
+    said = []
+    monkeypatch.setattr(watchlist.st, "warning", said.append)
+    watchlist._exposure_caveat()
+    assert said and "no traffic counts" in said[0]
+
+    # And the section renders nothing at all rather than half a heading.
+    def refuse(*args, **kwargs):
+        raise AssertionError("drew an empty exposure section")
+
+    for name in ("subheader", "dataframe", "divider", "markdown"):
+        monkeypatch.setattr(watchlist.st, name, refuse)
+    watchlist._exposure_section(["BRONX"])
+
+
 # --- one palette, one theme --------------------------------------------
 
 def test_the_theme_and_the_palette_agree():

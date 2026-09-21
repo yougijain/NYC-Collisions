@@ -6,3 +6,5 @@
 scikit-learn==1.5.2  # HistGradientBoostingClassifier, metrics, permutation importance
 matplotlib==3.9.2    # calibration plot
 joblib==1.4.2        # model persistence
+pyproj==3.7.2        # DOT counts are State Plane feet; the app speaks degrees
+scipy==1.17.1        # nearest-counter search for the exposure join

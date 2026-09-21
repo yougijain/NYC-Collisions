@@ -26,29 +26,38 @@ shows up as a diff instead of surviving in a README.
 ## How it works
 
 ```
-NYC Open Data (h9gi-nx95)
-        |  scripts/fetch_data.py      paginated SoQL, $order=collision_id
-        v
-   raw records
-        |  scripts/clean.py           normalise, type, mask bad coords
-        v
-   cleaned rows
-        |  scripts/build_dataset.py   merge + dedupe on collision_id
-        v
-  collisions.parquet  --->  GitHub Release asset (tag: data-latest)
-        |                                   |
-        |  app/db.py    DuckDB view         |  models/injury_risk.py
-        |                                   v
-        |                            scripts/train_injury_risk.py
-        |                              reports/injury_risk/
-        |                                   |
-        |                                   |  models/watchlist.py
-        |                                   v
-        |                            scripts/build_watchlist.py
-        |                              injury_watchlist.csv
-        v                                   |
-  sql/*.sql  ------>  app/dashboard.py  <---+
-                          Streamlit
+NYC Open Data (h9gi-nx95)                NYC Open Data (7ym2-wayt)
+        |  scripts/fetch_data.py                  |  scripts/fetch_traffic_volume.py
+        |    paginated SoQL,                      |    both through scripts/socrata.py
+        |    $order=collision_id                  v
+        v                                  traffic_volume.parquet
+   raw records                                    |   (Release asset)
+        |  scripts/clean.py                       |
+        |    normalise, type, mask bad coords     |
+        v                                         |
+   cleaned rows                                   |
+        |  scripts/build_dataset.py               |
+        |    merge + dedupe on collision_id       |
+        v                                         |
+  collisions.parquet  --->  Release asset         |
+        |                        |                |
+        |  app/db.py             |  models/injury_risk.py
+        |    DuckDB view         v                |
+        |                 scripts/train_injury_risk.py
+        |                   reports/injury_risk/   |
+        |                        |                |
+        |                        |  models/watchlist.py
+        |                        v                |
+        |                 scripts/build_watchlist.py
+        |                   injury_watchlist.csv   |
+        |                        |                |
+        |                        |  models/exposure.py
+        |                        v                v
+        |                 scripts/build_exposure.py
+        |                   injury_exposure.csv
+        v                        |
+  sql/*.sql  ---->  app/dashboard.py  <-----------+
+                       Streamlit
 ```
 
 Refreshes are incremental. Each run re-requests a 30-day overlap window
@@ -84,8 +93,8 @@ calibration saw:
 | Predictor | ROC-AUC | Brier | Log loss | Mean predicted | Brier skill |
 |---|---|---|---|---|---|
 | Borough × hour base rate | 0.5425 | 0.2478 | 0.6891 | 0.371 | — |
-| Gradient boosting (uncalibrated) | 0.7946 | 0.1862 | 0.5504 | 0.365 | +24.9% |
-| **Gradient boosting** | **0.7946** | **0.1811** | **0.5373** | **0.423** | **+26.9%** |
+| Gradient boosting (uncalibrated) | 0.7947 | 0.1861 | 0.5504 | 0.365 | +24.9% |
+| **Gradient boosting** | **0.7947** | **0.1811** | **0.5374** | **0.423** | **+26.9%** |
 
 Observed injury rate on the test fold: 0.432.
 <!-- /generated:model-metrics -->
@@ -135,17 +144,17 @@ second tab turns it into a list of intersections, ranked by one claim:
 > themselves account for
 
 <!-- generated:watchlist-headline -->
-**544 intersections** with at least 25 crashes between 2022-01-01 and 2026-06-11 qualify, over 413,780 scored crashes. The worst sits **31.7 points** above what its crash mix predicts; the top decile sits 14.2 points above. 57 clear z = 1.96, against roughly 14 expected from chance across that many sites — so the head of the list is signal and the tail is a screening queue, not a verdict.
+**1,093 intersections** with at least 25 crashes between 2022-01-01 and 2026-06-11 qualify, over 413,780 scored crashes. The worst sits **27.6 points** above what its crash mix predicts; the top decile sits 13.7 points above. 102 clear z = 1.96, against roughly 27 expected from chance across that many sites — so the head of the list is signal and the tail is a screening queue, not a verdict.
 <!-- /generated:watchlist-headline -->
 
 <!-- generated:watchlist-examples -->
 | Intersection | Borough | Crashes | Injured | Expected | Excess |
 |---|---|---|---|---|---|
-| Avenue U @ Gerritsen Avenue | Brooklyn | 26 | 88.5% | 54.7% | +31.7 pts |
-| Church Avenue @ Flatbush Avenue | Brooklyn | 31 | 83.9% | 53.9% | +27.9 pts |
-| Atlantic Avenue @ Crescent Street | Brooklyn | 30 | 73.3% | 43.7% | +27.6 pts |
+| 2 Avenue @ East 40 Street | Manhattan | 31 | 87.1% | 57.5% | +27.6 pts |
+| East 161 Street @ Melrose Avenue | Bronx | 53 | 77.4% | 53.3% | +22.1 pts |
 | Cross Bronx Expressway @ Randall Avenue | Bronx | 28 | 71.4% | 42.4% | +27.0 pts |
-| East 165 Street @ Grand Concourse | Bronx | 27 | 81.5% | 54.4% | +25.0 pts |
+| East 149 Street @ Park Avenue | Bronx | 31 | 64.5% | 37.7% | +24.8 pts |
+| Avenue D @ Kings Highway | Brooklyn | 38 | 73.7% | 47.7% | +24.0 pts |
 <!-- /generated:watchlist-examples -->
 
 Three things make that number mean something:
@@ -167,7 +176,7 @@ The same scoring produces the factor table, which is the part a non-technical
 reader repeats back.
 
 <!-- generated:factor-examples -->
-Crashes where the officer wrote *Pedestrian/Bicyclist/Other Pedestrian Error/Confusion* injure someone 83.3% of the time, against 13.0% for *Oversized Vehicle*. Predicted and observed track within a couple of points across all 31 factors, which is the calibration check worth trusting most.
+Crashes where the officer wrote *Lost Consciousness* injure someone 83.4% of the time, against 13.0% for *Oversized Vehicle*. Predicted and observed track within a couple of points across all 31 factors, which is the calibration check worth trusting most.
 <!-- /generated:factor-examples -->
 
 ```bash
@@ -176,14 +185,32 @@ python scripts/build_watchlist.py   # rewrites the three committed CSVs
 
 ### What it does not prove
 
-**There is no exposure denominator.** This dataset has crashes but no traffic
-counts, so a junction with many crashes may simply be a junction with many
-vehicles. Every rate here is per *crash*, never per vehicle passing through,
-and nothing on the list is a claim that an intersection is dangerous in the
-ordinary sense. NYC DOT publishes automated traffic volume counts on the same
-open data portal; joining them is what would turn crashes-per-crash into
-crashes-per-million-vehicles, which is the number a traffic engineer actually
-wants.
+**This is not a ranking of dangerous intersections — and that is now measured
+rather than asserted.** Every rate on the list is per *crash*: of the crashes
+at this junction, how many hurt somebody. The question a traffic engineer asks
+is per *vehicle*, and answering it needs to know how many vehicles pass
+through, which the collision data does not say.
+
+NYC DOT publishes automated traffic volume counts on the same open data
+portal. `models/exposure.py` joins them on, so the gap between the two
+questions can be put in numbers instead of in a disclaimer.
+
+<!-- generated:exposure-coverage -->
+NYC DOT's automated traffic counts reach **425 of the 1,075 located sites** (39.5%): a recorder within 150m whose location text names one of the junction's own streets. Those sites see a median 14,314 vehicles a day past the counter, and a median 0.824 crashes that hurt someone per million vehicles.
+
+Ranking them by that rate rather than by crash mix gives a substantially different order — the two agree at a Spearman correlation of **0.27**. That is the distance between the two questions, in a number.
+
+It is also why the watchlist is not re-ranked by it. A recorder sits on one segment rather than across a junction, and 338 of the matched counters cover a single direction, roughly half the traffic on a two-way street; sort by crashes per vehicle and the head of the list is whichever junction has the most under-measured traffic. Counts are a median 10 years old, the oldest from 2007. So every row carries a grade for how much weight it can take — 46 high (the counter names both streets and covers both directions), 190 medium, 189 low — and the ranking stays with the crash-mix residual, which covers every site rather than a third of them.
+<!-- /generated:exposure-coverage -->
+
+Read the list as what it is: sites whose crashes injure people more often than
+their circumstances account for. That is a screening question, not a verdict,
+and it is not the same as the site you are most likely to be hurt at.
+
+What would close the gap is a count at every approach to a junction rather
+than on one segment of one street, taken in the window the crashes are drawn
+from. DOT's counts are deployments, not a network: a recorder goes out for a
+week or two and moves on.
 
 The model card lists the rest: the features are an officer's judgement
 recorded after the fact, a quarter of contributing factors say "Unspecified",
@@ -275,7 +302,14 @@ python scripts/dataset_facts.py            # headline figures for this build
 python scripts/build_seed.py               # re-cut the committed fallback
 python scripts/train_injury_risk.py        # retrain, re-measure, redraw
 python scripts/build_watchlist.py          # rescore and rank intersections
+python scripts/fetch_traffic_volume.py     # pull DOT counts (7ym2-wayt)
+python scripts/build_exposure.py           # join counts, rebuild the rates
+python scripts/sync_docs.py                # rewrite the figures in the prose
 ```
+
+`build_exposure.py` reads `data/clean/traffic_volume.parquet` if it is there
+and the published Release asset otherwise, so it works without running the
+fetch first.
 
 `pytest` runs against the committed seed unless `NYC_COLLISIONS_DATA` points
 it elsewhere, so a code change is never graded on whatever the city published

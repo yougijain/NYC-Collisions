@@ -6,7 +6,7 @@ import altair as alt
 import streamlit as st
 
 import palette
-from views.common import watchlist_data
+from views.common import exposure_data, watchlist_data
 
 # Enough of the watchlist to see on a map without it becoming a blur.
 WATCHLIST_MAP_SITES = 60
@@ -61,6 +61,135 @@ def _map(sites: pd.DataFrame, basemap) -> None:
     )
 
 
+def _exposure_section(boroughs: list[str]) -> None:
+    """The sites that have a traffic count, and what it says.
+
+    Kept apart from the main table rather than added as columns to it.
+    Only a third of sites have a volume, so as columns it would be mostly
+    blanks -- and blanks next to numbers read as zero.
+    """
+    exposure, summary = exposure_data()
+    if exposure.empty or not summary:
+        return
+
+    shown = exposure[exposure["borough"].isin(boroughs)] if boroughs else exposure
+    if shown.empty:
+        return
+
+    st.divider()
+    st.subheader("Where we know how much traffic goes through")
+    st.markdown(
+        f"NYC DOT puts automated recorders on a street for a week or two "
+        f"at a time. {summary['matched']:,} of the "
+        f"{summary['sites_located']:,} located sites have one within 150m "
+        f"that names one of their own streets, which is enough to say how "
+        f"often a vehicle passing through ends up in a crash that hurt "
+        f"somebody."
+    )
+
+    table = shown.rename(columns={
+        "site": "Intersection",
+        "borough": "Borough",
+        "crashes": "Crashes",
+        "vehicles_per_day": "Vehicles/day",
+        "harmful_per_million": "Per million",
+        "counted_year": "Counted",
+        "confidence": "Volume quality",
+    })
+    st.dataframe(
+        table[["Intersection", "Borough", "Crashes", "Vehicles/day",
+               "Per million", "Counted", "Volume quality"]],
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "Vehicles/day": st.column_config.NumberColumn(
+                format="localized",
+                help="On the busiest DOT-counted approach to the junction.",
+            ),
+            "Per million": st.column_config.NumberColumn(
+                format="%.2f",
+                help="Crashes that hurt someone, per million vehicles past "
+                     "that counter.",
+            ),
+            "Counted": st.column_config.NumberColumn(
+                format="%d", help="The year DOT last counted this segment."
+            ),
+            "Volume quality": st.column_config.TextColumn(
+                help="high: the counter names both streets and covers both "
+                     "directions. low: one street, one direction, so the "
+                     "volume is an undercount.",
+            ),
+        },
+    )
+    _exposure_note()
+
+
+def _exposure_note() -> None:
+    """Explain why the per-vehicle figure is not what the list is sorted by."""
+    exposure, summary = exposure_data()
+    if exposure.empty or not summary:
+        return
+
+    with st.expander("Why the list is not sorted by crashes per vehicle"):
+        st.markdown(
+            f"Because the denominator is not good enough to rank on. A DOT "
+            f"recorder sits on one segment, not across a junction, and "
+            f"{summary['single_direction_counts']:,} of "
+            f"{summary['matched']:,} matched counters cover a single "
+            f"direction — roughly half the traffic on a two-way street. "
+            f"Sort by crashes per vehicle and the top is whichever junction "
+            f"has the most under-measured traffic, not the most dangerous "
+            f"one.\n\n"
+            f"The grades say how much weight a row can take. Where a "
+            f"counter names both streets and covers both directions "
+            f"(**{summary['by_confidence'].get('high', 0)} sites**) it "
+            f"reports a median "
+            f"{exposure[exposure.confidence == 'high']['vehicles_per_day'].median():,.0f} "
+            f"vehicles a day; where it names one street in one direction "
+            f"(**{summary['by_confidence'].get('low', 0)} sites**) it "
+            f"reports "
+            f"{exposure[exposure.confidence == 'low']['vehicles_per_day'].median():,.0f}. "
+            f"Same kind of junction, different measurement.\n\n"
+            f"Counts are also a median **"
+            f"{summary['median_count_age_years']} years old**, the oldest "
+            f"from {summary['oldest_count_year']}, and are applied across "
+            f"a window they were not taken in."
+        )
+
+
+def _exposure_caveat() -> None:
+    """Say what the list is not, using the number rather than the assertion.
+
+    This used to be an assertion: no traffic counts exist, so the ranking
+    cannot be about danger. NYC DOT counts now cover part of the city, so
+    the claim is measurable -- and measuring it says the same thing, which
+    is worth more than saying it.
+    """
+    exposure, summary = exposure_data()
+    if exposure.empty or not summary:
+        st.warning(
+            "**This does not measure how dangerous an intersection is.** "
+            "There are crashes in this data but no traffic counts here, so "
+            "a junction with many crashes may simply be a junction with "
+            "many vehicles. Every rate is per crash, never per vehicle "
+            "passing through."
+        )
+        return
+
+    rho = summary.get("spearman_excess_vs_per_vehicle")
+    st.warning(
+        f"**This is not a ranking of dangerous intersections, and that is "
+        f"now measured rather than assumed.** NYC DOT traffic counts reach "
+        f"{summary['matched']:,} of these {summary['sites_located']:,} "
+        f"sites. Ranking those by crashes per vehicle instead of by crash "
+        f"mix gives a substantially different order — the two agree at a "
+        f"rank correlation of only {rho:.2f}. So a site high on this list "
+        f"is one whose crashes injure people more often than their "
+        f"circumstances account for, which is not the same as a site you "
+        f"are most likely to be hurt at."
+    )
+
+
 def render(boroughs: list[str], basemap) -> None:
     """Intersections whose crashes injure people more often than they should.
 
@@ -95,16 +224,7 @@ def render(boroughs: list[str], basemap) -> None:
         "outranked by one with 25 and a lucky run."
     )
 
-    st.warning(
-        "**This does not measure how dangerous an intersection is.** There "
-        "are crashes in this data but no traffic counts, so there is no "
-        "exposure denominator: a junction with many crashes may simply be a "
-        "junction with many vehicles. Every rate here is per crash, never per "
-        "vehicle passing through. Joining NYC DOT automated volume counts is "
-        "what would turn this into a danger ranking. Until then it says one "
-        "thing only — these sites injure people more often than their crash "
-        "mix explains."
-    )
+    _exposure_caveat()
 
     filtered = sites[sites["borough"].isin(boroughs)] if boroughs else sites
     if filtered.empty:
@@ -174,6 +294,8 @@ def render(boroughs: list[str], basemap) -> None:
 
     st.subheader(f"Worst {min(WATCHLIST_MAP_SITES, len(shown))} on the map")
     _map(shown, basemap)
+
+    _exposure_section(boroughs)
 
     st.divider()
     st.subheader("Contributing factors by predicted injury risk")
