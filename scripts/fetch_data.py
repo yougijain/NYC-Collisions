@@ -1,21 +1,23 @@
-"""Paginated client for the NYC Open Data (Socrata) collisions dataset.
+"""Fetch the NYC collisions dataset.
 
 Dataset: Motor Vehicle Collisions - Crashes (h9gi-nx95)
 https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95
 
-Socrata caps a single response at 50,000 rows, so any slice bigger than that
-has to be walked with $limit/$offset under a deterministic $order. Paging
-without an explicit sort is not stable and silently drops or repeats rows.
+The paging, retrying and throttling live in scripts/socrata.py, which knows
+nothing about crashes. What is left here is the part specific to this
+dataset: which column gives a stable order, and how to bound it by date.
 """
 
 import logging
-import os
-import time
+import sys
 from pathlib import Path
-from typing import Dict, Iterator, Optional, Union
+from typing import Optional
 
 import pandas as pd
-import requests
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import socrata  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,79 +26,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 DATASET_ID: str = "h9gi-nx95"
-BASE_URL: str = f"https://data.cityofnewyork.us/resource/{DATASET_ID}.json"
 OUTPUT_DIR: Path = Path("data/raw")
-REQUEST_TIMEOUT: int = 120
 
-# Socrata's hard per-request ceiling.
-MAX_PAGE_SIZE: int = 50_000
 # collision_id is unique, so it gives a total order and therefore stable paging.
 PAGE_ORDER: str = "collision_id"
 
-MAX_RETRIES: int = 5
-BACKOFF_BASE: float = 2.0
-RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
-
-
-def _session(app_token: Optional[str] = None) -> requests.Session:
-    """Build a session carrying the Socrata app token, if one is available.
-
-    Anonymous requests share a small throttling pool and get 429s under any
-    real load. A token is free and lifts the per-app limit.
-    """
-    session = requests.Session()
-    token = app_token or os.getenv("SOCRATA_APP_TOKEN")
-    if token:
-        session.headers["X-App-Token"] = token
-        logger.info("Using Socrata app token")
-    else:
-        logger.warning(
-            "No SOCRATA_APP_TOKEN set; requests are subject to strict "
-            "anonymous throttling"
-        )
-    return session
-
-
-def _get_with_retry(
-    session: requests.Session, params: Dict[str, Union[int, str]]
-) -> list:
-    """GET one page, retrying throttling and transient server errors."""
-    last_error: Optional[Exception] = None
-
-    for attempt in range(MAX_RETRIES):
-        try:
-            response = session.get(
-                BASE_URL, params=params, timeout=REQUEST_TIMEOUT
-            )
-            if response.status_code in RETRY_STATUSES:
-                raise requests.exceptions.HTTPError(
-                    f"retryable status {response.status_code}",
-                    response=response,
-                )
-            response.raise_for_status()
-            return response.json()
-
-        except (
-            requests.exceptions.Timeout,
-            requests.exceptions.ConnectionError,
-            requests.exceptions.HTTPError,
-        ) as exc:
-            status = getattr(getattr(exc, "response", None), "status_code", None)
-            if status is not None and status not in RETRY_STATUSES:
-                logger.error(f"Non-retryable HTTP error {status}: {exc}")
-                raise
-            last_error = exc
-            if attempt == MAX_RETRIES - 1:
-                break
-            delay = BACKOFF_BASE**attempt
-            logger.warning(
-                f"Request failed ({exc}); retrying in {delay:.0f}s "
-                f"[{attempt + 1}/{MAX_RETRIES}]"
-            )
-            time.sleep(delay)
-
-    logger.error(f"Giving up after {MAX_RETRIES} attempts: {last_error}")
-    raise RuntimeError(f"Socrata request failed: {last_error}") from last_error
+MAX_PAGE_SIZE: int = socrata.MAX_PAGE_SIZE
 
 
 def build_where(
@@ -124,66 +59,6 @@ def build_where(
     return " AND ".join(clauses) if clauses else None
 
 
-def iter_pages(
-    where_clause: Optional[str] = None,
-    page_size: int = MAX_PAGE_SIZE,
-    app_token: Optional[str] = None,
-    max_rows: Optional[int] = None,
-) -> Iterator[pd.DataFrame]:
-    """Yield the dataset one page at a time.
-
-    Args:
-        where_clause: Optional SoQL $where filter.
-        page_size: Rows per request, capped at Socrata's 50,000 limit.
-        app_token: Socrata app token; falls back to $SOCRATA_APP_TOKEN.
-        max_rows: Stop once this many rows have been yielded.
-
-    Yields:
-        A DataFrame per page, in collision_id order.
-    """
-    if page_size <= 0:
-        raise ValueError("page_size must be a positive integer")
-    page_size = min(page_size, MAX_PAGE_SIZE)
-
-    session = _session(app_token)
-    offset = 0
-    total = 0
-
-    logger.info(f"Fetching from {BASE_URL}")
-    if where_clause:
-        logger.info(f"Filter: {where_clause}")
-
-    while True:
-        remaining = None if max_rows is None else max_rows - total
-        if remaining is not None and remaining <= 0:
-            break
-
-        limit = page_size if remaining is None else min(page_size, remaining)
-        params: Dict[str, Union[int, str]] = {
-            "$limit": limit,
-            "$offset": offset,
-            "$order": PAGE_ORDER,
-        }
-        if where_clause:
-            params["$where"] = where_clause
-
-        rows = _get_with_retry(session, params)
-        if not rows:
-            break
-
-        total += len(rows)
-        logger.info(f"  page at offset {offset:,}: {len(rows):,} rows "
-                    f"({total:,} total)")
-        yield pd.DataFrame(rows)
-
-        # A short page means we reached the end of the result set.
-        if len(rows) < limit:
-            break
-        offset += len(rows)
-
-    logger.info(f"Fetched {total:,} rows")
-
-
 def fetch_collisions(
     since: Optional[str] = None,
     until: Optional[str] = None,
@@ -191,7 +66,7 @@ def fetch_collisions(
     app_token: Optional[str] = None,
     max_rows: Optional[int] = None,
 ) -> pd.DataFrame:
-    """Fetch a date-bounded slice of the dataset into a single DataFrame.
+    """Fetch a date-bounded slice of the collisions dataset.
 
     Args:
         since: Inclusive lower bound on crash_date (ISO date or datetime).
@@ -203,18 +78,14 @@ def fetch_collisions(
     Returns:
         The concatenated result, empty if the filter matched nothing.
     """
-    pages = list(
-        iter_pages(
-            where_clause=build_where(since, until),
-            page_size=page_size,
-            app_token=app_token,
-            max_rows=max_rows,
-        )
+    return socrata.fetch(
+        DATASET_ID,
+        PAGE_ORDER,
+        where_clause=build_where(since, until),
+        page_size=page_size,
+        app_token=app_token,
+        max_rows=max_rows,
     )
-    if not pages:
-        logger.warning("API returned no rows")
-        return pd.DataFrame()
-    return pd.concat(pages, ignore_index=True)
 
 
 def save_data(df: pd.DataFrame, filename: str) -> Path:

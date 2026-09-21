@@ -1,0 +1,64 @@
+name: Fetch traffic volume
+
+# DOT republishes automated counts in occasional batches, not weekly, so
+# this is dispatched by hand rather than scheduled. The weekly refresh
+# consumes whatever asset this last published.
+on:
+  workflow_dispatch:
+    inputs:
+      max_rows:
+        description: "Cap rows fetched (blank for the whole dataset)"
+        type: string
+        default: ""
+      publish:
+        description: "Publish the result as a Release asset"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: traffic-volume
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: data-latest
+  ASSET: data/clean/traffic_volume.parquet
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Fetch counts
+        # The schema report lands in the job summary: this dataset is new
+        # to the pipeline and its columns are what the join is built on.
+        env:
+          SOCRATA_APP_TOKEN: ${{ secrets.SOCRATA_APP_TOKEN }}
+        run: |
+          python scripts/fetch_traffic_volume.py \
+            ${{ inputs.max_rows && format('--max-rows {0}', inputs.max_rows) || '' }}
+
+      - name: Publish
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || \
+            gh release create "$RELEASE_TAG" \
+              --title "Latest collisions dataset" \
+              --notes "Rebuilt from NYC Open Data by the workflows in .github/workflows/."
+
+          gh release upload "$RELEASE_TAG" "$ASSET" --clobber
