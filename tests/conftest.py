@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -9,14 +10,26 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import db  # noqa: E402
 
+SEED = ROOT / "data" / "clean" / "collisions_seed.parquet"
+
 
 @pytest.fixture(scope="session")
-def connection():
-    """A DuckDB connection over whichever dataset is resolvable.
+def dataset_path() -> str:
+    """The dataset the suite runs against.
 
-    Falls back to the committed seed, so the suite runs offline on a fresh
-    clone without first building the dataset.
+    The committed seed by default, so a run is hermetic: no network, and the
+    same rows on every machine. app/db.py's own resolution order would reach
+    for the published Release asset whenever one is downloadable, which would
+    quietly turn a code change's CI into a check on live data.
+
+    The refresh workflow sets $NYC_COLLISIONS_DATA to a freshly built dataset
+    and reuses this suite as the gate on publishing it.
     """
-    con = db.connect()
+    return os.getenv("NYC_COLLISIONS_DATA") or str(SEED)
+
+
+@pytest.fixture(scope="session")
+def connection(dataset_path):
+    con = db.connect(dataset_path)
     yield con
     con.close()

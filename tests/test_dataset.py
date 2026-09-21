@@ -72,6 +72,49 @@ def test_coordinates_fall_within_nyc(connection):
     assert stray == 0
 
 
+def test_intersections_are_identifiable(connection):
+    """on_street_name and cross_street_name together name an intersection.
+
+    The Socrata API returns the cross-street and off-street fields under each
+    other's names. A build that does not reconcile them has house numbers
+    filed as cross streets and no row carrying both halves of a pair, which
+    makes any intersection-level analysis impossible.
+    """
+    paired, total = connection.execute(
+        f"""SELECT COUNT(*) FILTER (WHERE on_street_name    IS NOT NULL
+                                      AND cross_street_name IS NOT NULL),
+                   COUNT(*)
+            FROM {db.TABLE_NAME}"""
+    ).fetchone()
+    assert paired / total > 0.25
+
+
+def test_street_names_carry_no_padding(connection):
+    """The source pads street names, which stops one intersection's records
+    from grouping together."""
+    padded = connection.execute(
+        f"""SELECT COUNT(*) FROM {db.TABLE_NAME}
+            WHERE on_street_name    != trim(on_street_name)
+               OR cross_street_name != trim(cross_street_name)
+               OR off_street_name   != trim(off_street_name)
+               OR on_street_name    LIKE '%  %'
+               OR cross_street_name LIKE '%  %'
+               OR off_street_name   LIKE '%  %'"""
+    ).fetchone()[0]
+    assert padded == 0
+
+
+def test_an_address_is_never_filed_as_a_cross_street(connection):
+    """A cross street is a street name; a leading house number means the
+    address column has leaked into it."""
+    numbered = connection.execute(
+        f"""SELECT COUNT(*) FROM {db.TABLE_NAME}
+            WHERE regexp_matches(cross_street_name, '^[0-9]+(-[0-9]+)? [0-9]*[A-Z]')
+              AND on_street_name IS NULL"""
+    ).fetchone()[0]
+    assert numbered == 0
+
+
 @pytest.mark.parametrize("sql_file", QUERY_FILES)
 def test_query_returns_rows(connection, sql_file, params):
     assert not db.query(connection, sql_file, params).empty

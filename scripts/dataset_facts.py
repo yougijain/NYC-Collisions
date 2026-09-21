@@ -1,0 +1,162 @@
+"""Publish the headline figures for whichever build is current.
+
+Every count quoted about this project -- in the README, in the dashboard, in
+a write-up -- should trace to one build rather than to whatever someone
+measured once and pasted. This writes those figures to docs/dataset_facts.json
+for machines and docs/dataset_facts.md for people, and the weekly refresh
+regenerates both, so a stale number shows up as a diff.
+
+Usage:
+    python scripts/dataset_facts.py
+"""
+
+import json
+import logging
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "app"))
+sys.path.insert(0, str(ROOT / "scripts"))
+
+import db  # noqa: E402
+from build_dataset import BUILT_AT_KEY, stamped_version  # noqa: E402
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+JSON_PATH = ROOT / "docs" / "dataset_facts.json"
+MARKDOWN_PATH = ROOT / "docs" / "dataset_facts.md"
+
+SOURCE_NAME = "NYC Open Data - Motor Vehicle Collisions: Crashes (h9gi-nx95)"
+SOURCE_URL = (
+    "https://data.cityofnewyork.us/Public-Safety/"
+    "Motor-Vehicle-Collisions-Crashes/h9gi-nx95"
+)
+
+
+def _build_metadata(source: str) -> Dict[str, Any]:
+    """Read the version and build time stamped into a local Parquet file."""
+    path = Path(source)
+    if not path.exists():
+        return {"dataset_version": None, "built_at": None}
+
+    import pyarrow.parquet as pq
+
+    metadata = pq.read_schema(path).metadata or {}
+    built_at = metadata.get(BUILT_AT_KEY)
+    return {
+        "dataset_version": stamped_version(path) or None,
+        "built_at": built_at.decode() if built_at else None,
+    }
+
+
+def collect(source: str = None) -> Dict[str, Any]:
+    """Measure the current build.
+
+    Args:
+        source: Parquet path or URL; resolved through app/db.py when omitted.
+
+    Returns:
+        The figures, ready to serialise.
+    """
+    resolved = source or db.resolve_dataset()
+    connection = db.connect(resolved)
+
+    row = connection.execute(f"""
+        SELECT
+            COUNT(*)                                       AS rows,
+            MIN(crash_datetime)                            AS first_crash,
+            MAX(crash_datetime)                            AS last_crash,
+            SUM(number_of_persons_injured)                 AS people_injured,
+            SUM(number_of_persons_killed)                  AS people_killed,
+            COUNT(*) FILTER (
+                WHERE number_of_persons_injured > 0
+                   OR number_of_persons_killed  > 0)       AS injury_crashes,
+            COUNT(*) FILTER (WHERE latitude IS NOT NULL)   AS geolocated,
+            COUNT(*) FILTER (
+                WHERE on_street_name    IS NOT NULL
+                  AND cross_street_name IS NOT NULL)       AS at_intersection,
+            COUNT(DISTINCT borough)                        AS boroughs
+        FROM {db.TABLE_NAME}
+    """).df().iloc[0]
+    connection.close()
+
+    total = int(row["rows"])
+    facts: Dict[str, Any] = {
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "source": {"name": SOURCE_NAME, "url": SOURCE_URL},
+        "rows": total,
+        "first_crash": str(row["first_crash"]),
+        "last_crash": str(row["last_crash"]),
+        "boroughs": int(row["boroughs"]),
+        "people_injured": int(row["people_injured"]),
+        "people_killed": int(row["people_killed"]),
+        "injury_crashes": int(row["injury_crashes"]),
+        "injury_crash_rate": round(int(row["injury_crashes"]) / total, 4),
+        "geolocated_rate": round(int(row["geolocated"]) / total, 4),
+        "at_intersection_rate": round(int(row["at_intersection"]) / total, 4),
+    }
+    facts.update(_build_metadata(resolved))
+    return facts
+
+
+def render(facts: Dict[str, Any]) -> str:
+    """Format the figures as a Markdown table."""
+    first = facts["first_crash"][:10]
+    last = facts["last_crash"][:10]
+    built = facts["built_at"] or "unknown"
+
+    rows = [
+        ("Crash records", f"{facts['rows']:,}"),
+        ("Date range", f"{first} to {last}"),
+        ("Boroughs", str(facts["boroughs"])),
+        ("People injured", f"{facts['people_injured']:,}"),
+        ("People killed", f"{facts['people_killed']:,}"),
+        (
+            "Crashes causing injury or death",
+            f"{facts['injury_crashes']:,} ({facts['injury_crash_rate']:.1%})",
+        ),
+        ("Records with coordinates", f"{facts['geolocated_rate']:.1%}"),
+        ("Records at a named intersection", f"{facts['at_intersection_rate']:.1%}"),
+        ("Dataset version", str(facts["dataset_version"] or "unstamped")),
+        ("Build timestamp", built),
+    ]
+
+    lines = [
+        "# Dataset facts",
+        "",
+        "Generated by `scripts/dataset_facts.py`, rewritten by the weekly",
+        "refresh. Quote these figures rather than measuring your own, so the",
+        "README, the dashboard and anything written about this project all",
+        "describe the same build.",
+        "",
+        "| Measure | Value |",
+        "|---|---|",
+    ]
+    lines += [f"| {label} | {value} |" for label, value in rows]
+    lines += [
+        "",
+        f"Source: [{facts['source']['name']}]({facts['source']['url']}).",
+        f"Generated {facts['generated_at']}.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def main() -> None:
+    facts = collect()
+    JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
+    JSON_PATH.write_text(json.dumps(facts, indent=2) + "\n", encoding="utf-8")
+    MARKDOWN_PATH.write_text(render(facts), encoding="utf-8")
+    logger.info(f"Wrote {JSON_PATH} and {MARKDOWN_PATH}")
+    print(render(facts))
+
+
+if __name__ == "__main__":
+    main()

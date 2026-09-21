@@ -21,5 +21,7 @@ jobs:
       - run: pip install -r requirements.txt
 
       # The suite mocks all network calls and runs against the committed
-      # seed dataset, so it needs no secrets and no API access.
+      # seed dataset, so it needs no secrets and no API access. Validating
+      # the published dataset is the refresh workflow's job; a code change
+      # should not go red because the city had a bad week.
       - run: pytest tests/ -q

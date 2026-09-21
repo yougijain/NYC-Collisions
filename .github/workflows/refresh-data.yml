@@ -90,3 +90,32 @@ jobs:
               --notes "Rebuilt weekly from NYC Open Data (h9gi-nx95) by .github/workflows/refresh-data.yml."
 
           gh release upload "$RELEASE_TAG" "$ASSET" --clobber
+
+      - name: Regenerate the published figures
+        # Every count quoted about this project comes from these two files.
+        # Rebuilding them here is what stops the repository from describing
+        # a build it stopped shipping months ago.
+        env:
+          NYC_COLLISIONS_DATA: ${{ env.ASSET }}
+        run: |
+          python scripts/dataset_facts.py
+          python scripts/data_quality_report.py
+
+      - name: Commit the figures
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/dataset_facts.json \
+                  docs/dataset_facts.md \
+                  data/clean/data_quality_report.txt
+
+          if git diff --cached --quiet; then
+            echo "Figures unchanged."
+            exit 0
+          fi
+
+          git commit -m "chore(data): refresh published figures for the latest build"
+          # The scheduled run is the only writer, but the branch can still
+          # have moved between checkout and here.
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

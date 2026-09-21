@@ -7,7 +7,12 @@ Handles both shapes of the source data:
   - the CSV export, with headers like "VEHICLE TYPE CODE 1"
   - the Socrata JSON API, which uses snake_case but irregularly emits
     vehicle_type_code1 / vehicle_type_code2 (no underscore) alongside
-    vehicle_type_code_3 / _4 / _5 (with one)
+    vehicle_type_code_3 / _4 / _5 (with one), and which returns the
+    cross-street and off-street fields under each other's names
+
+Bumping DATASET_VERSION invalidates any dataset built by an older revision,
+so a semantic change here forces the next pipeline run to rebuild in full
+rather than merging new rows into stale ones.
 """
 
 import logging
@@ -17,6 +22,12 @@ from typing import List
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+# Cleaning semantics, not file format. Bump this whenever a change here would
+# make newly cleaned rows disagree with rows already published.
+#   1  initial release
+#   2  reconcile the Socrata cross-street/off-street swap
+DATASET_VERSION = 2
 
 # Column order of the published dataset.
 CANONICAL_COLUMNS: List[str] = [
@@ -58,6 +69,16 @@ SPARSE_COLUMNS: List[str] = [
 # Redundant with latitude/longitude, and a nested dict over the API.
 REDUNDANT_COLUMNS: List[str] = ["location"]
 
+# Free-text location fields. The source pads them to a fixed width and
+# separates a house number from its street with a run of spaces, so
+# "BARUCH DRIVE   " and "1683      BOSTON ROAD" both need collapsing before
+# two records at one intersection will group together.
+STREET_COLUMNS: List[str] = [
+    "on_street_name",
+    "cross_street_name",
+    "off_street_name",
+]
+
 # Generous bounding box around the five boroughs. The source encodes unknown
 # positions as 0.0 rather than null, which would otherwise plot in the
 # Gulf of Guinea.
@@ -65,6 +86,99 @@ NYC_LAT_RANGE = (40.4, 41.0)
 NYC_LON_RANGE = (-74.35, -73.6)
 
 _TIME_PATTERN = re.compile(r"^(\d{1,2}):(\d{2})(?::(\d{2}))?$")
+
+# The CSV export ships upper-case, space-separated headers ("CRASH DATE").
+# Only the JSON API spells this column in snake_case, which makes it a
+# reliable discriminator between the two payload shapes.
+_API_MARKER_COLUMN = "crash_date"
+
+# Below this, a payload is too small for the co-occurrence check to mean
+# anything, so the sanity warning is skipped rather than fired spuriously.
+_STREET_CHECK_MIN_ROWS = 500
+
+
+def is_api_payload(columns) -> bool:
+    """True when a raw frame came from the Socrata JSON API.
+
+    Args:
+        columns: The raw frame's column labels, before normalization.
+
+    Returns:
+        Whether the payload is the API's rather than the CSV export's.
+    """
+    return _API_MARKER_COLUMN in set(columns)
+
+
+def normalize_street_names(df: pd.DataFrame) -> pd.DataFrame:
+    """Collapse the padding the source puts in and around street names.
+
+    Args:
+        df: A column-normalized frame.
+
+    Returns:
+        A copy whose street columns are single-spaced and stripped, with
+        blanks turned into nulls.
+    """
+    out = df.copy()
+    for col in STREET_COLUMNS:
+        if col not in out.columns:
+            continue
+        cleaned = (
+            out[col]
+            .astype("string")
+            .str.replace(r"\s+", " ", regex=True)
+            .str.strip()
+        )
+        out[col] = cleaned.replace("", pd.NA)
+    return out
+
+
+def reconcile_street_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Restore the documented meaning of the two street-location columns.
+
+    NYC documents three location fields, of which a crash carries either the
+    intersection pair or the address:
+
+        on_street_name     the street the crash occurred on
+        cross_street_name  the nearest intersecting street
+        off_street_name    a house address, for a mid-block crash
+
+    The JSON API returns the last two under each other's names, so a dataset
+    built from it has house numbers filed as cross streets and no identifiable
+    intersections at all. Checked against the 27,164 collision_ids present in
+    both sources, the export's CROSS STREET NAME equals the API's
+    off_street_name for 99.996% of rows and its OFF STREET NAME equals the
+    API's cross_street_name for 100%.
+
+    Args:
+        df: A column-normalized frame from the API.
+
+    Returns:
+        A copy with the two columns restored to their documented meaning.
+    """
+    if not {"cross_street_name", "off_street_name"}.issubset(df.columns):
+        return df
+
+    out = df.rename(
+        columns={
+            "cross_street_name": "off_street_name",
+            "off_street_name": "cross_street_name",
+        }
+    )
+    logger.info("Reconciled the Socrata cross-street/off-street swap")
+
+    # An intersection is on_street + cross_street together. If the swap left
+    # none, the API's field mapping has changed again and this needs revisiting.
+    if len(out) >= _STREET_CHECK_MIN_ROWS:
+        paired = (out["on_street_name"].notna() & out["cross_street_name"].notna()).mean()
+        if paired == 0:
+            logger.warning(
+                "No row carries both on_street_name and cross_street_name after "
+                "reconciliation; the upstream field mapping may have changed"
+            )
+
+    return out
+
 
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -146,9 +260,10 @@ def _mask_invalid_coordinates(df: pd.DataFrame) -> pd.DataFrame:
 def clean(df: pd.DataFrame) -> pd.DataFrame:
     """Apply the full cleaning pipeline to raw collision records.
 
-    Normalizes column names, builds crash_datetime, coerces types, masks
-    invalid coordinates, drops sparse and redundant columns, and de-duplicates
-    on collision_id.
+    Normalizes column names, reconciles the API's swapped street columns and
+    their padding, builds crash_datetime, coerces types, masks invalid
+    coordinates, drops sparse and redundant columns, and de-duplicates on
+    collision_id.
 
     Args:
         df: Raw DataFrame from the CSV export or the Socrata API.
@@ -162,7 +277,11 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame(columns=CANONICAL_COLUMNS)
 
+    from_api = is_api_payload(df.columns)
     out = normalize_columns(df)
+    if from_api:
+        out = reconcile_street_columns(out)
+    out = normalize_street_names(out)
 
     required = {"crash_date", "crash_time", "collision_id"}
     missing = required - set(out.columns)
