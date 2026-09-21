@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 import db
-from clean import CANONICAL_COLUMNS
+from build_dataset import DATASET_COLUMNS
 
 QUERY_FILES = [
     "01_metrics.sql",
@@ -27,11 +27,41 @@ def params(bounds):
     )
 
 
-def test_schema_matches_canonical_columns(connection):
+def test_schema_matches_the_published_columns(connection):
     columns = connection.execute(
         f"SELECT * FROM {db.TABLE_NAME} LIMIT 0"
     ).df().columns.tolist()
-    assert columns == CANONICAL_COLUMNS
+    assert columns == DATASET_COLUMNS
+
+
+def test_the_resolved_borough_covers_more_than_the_source(connection):
+    """The source omits borough on 31% of crashes, mostly expressway and
+    parkway reports, which otherwise makes UNKNOWN the largest bar on every
+    borough chart."""
+    at_source, resolved = connection.execute(
+        f"""SELECT COUNT(borough), COUNT(borough_resolved)
+            FROM {db.TABLE_NAME}"""
+    ).fetchone()
+    assert resolved > at_source
+
+
+def test_the_resolved_borough_never_contradicts_the_source(connection):
+    """It fills blanks; it does not overrule a borough the source gave."""
+    overruled = connection.execute(
+        f"""SELECT COUNT(*) FROM {db.TABLE_NAME}
+            WHERE borough IS NOT NULL AND borough_resolved != borough"""
+    ).fetchone()[0]
+    assert overruled == 0
+
+
+def test_the_resolved_borough_invents_no_new_names(connection):
+    extra = connection.execute(
+        f"""SELECT COUNT(DISTINCT borough_resolved) FROM {db.TABLE_NAME}
+            WHERE borough_resolved NOT IN (
+                SELECT DISTINCT borough FROM {db.TABLE_NAME}
+                WHERE borough IS NOT NULL)"""
+    ).fetchone()[0]
+    assert extra == 0
 
 
 def test_dataset_is_not_empty(bounds):
@@ -118,6 +148,16 @@ def test_an_address_is_never_filed_as_a_cross_street(connection):
 @pytest.mark.parametrize("sql_file", QUERY_FILES)
 def test_query_returns_rows(connection, sql_file, params):
     assert not db.query(connection, sql_file, params).empty
+
+
+def test_the_headline_counts_agree_with_the_table(connection, params):
+    """The tiles used to say 244,916 while the page header said 637,256,
+    because the metrics query silently filtered to harmful crashes."""
+    row = db.query(connection, "01_metrics.sql", params).iloc[0]
+    total = connection.execute(f"SELECT COUNT(*) FROM {db.TABLE_NAME}").fetchone()[0]
+
+    assert row["crash_count"] == total
+    assert 0 < row["harmful_crash_count"] < row["crash_count"]
 
 
 def test_filters_narrow_results(connection, bounds, params):
