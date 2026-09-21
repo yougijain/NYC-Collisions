@@ -1,0 +1,8 @@
+# Training and scoring only. The dashboard reads a pre-scored watchlist and
+# never imports these, so they stay out of requirements.txt and off the
+# Streamlit deployment.
+-r requirements.txt
+
+scikit-learn==1.5.2  # HistGradientBoostingClassifier, metrics, permutation importance
+matplotlib==3.9.2    # calibration plot
+joblib==1.4.2        # model persistence
