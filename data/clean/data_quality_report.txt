@@ -3,7 +3,7 @@ NYC COLLISIONS DATA QUALITY REPORT
 ============================================================
 
 Total Records: 637,256
-Total Columns: 23
+Total Columns: 24
 
 ------------------------------------------------------------
 COLUMN-LEVEL METRICS
@@ -78,6 +78,9 @@ COLUMN-LEVEL METRICS
 [OK] crash_datetime
    Completeness: 100.0% (637,256 non-null, 0 null)
 
+[WARN] borough_resolved
+   Completeness: 94.56% (602,589 non-null, 34,667 null)
+
 ------------------------------------------------------------
 DATA VALIDATION CHECKS
 ------------------------------------------------------------
@@ -98,6 +101,6 @@ Average Injuries per Crash: 0.51
 Unique Boroughs: 5
 
 ------------------------------------------------------------
-OVERALL DATA QUALITY SCORE: 52.2%
-(12/23 columns with >=95% completeness)
+OVERALL DATA QUALITY SCORE: 50.0%
+(12/24 columns with >=95% completeness)
 ============================================================

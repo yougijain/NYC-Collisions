@@ -4,60 +4,62 @@
     "to": "2026-06-11"
   },
   "min_site_crashes": 25,
+  "intersections_directed": 94433,
+  "intersections_canonical": 63132,
   "folds": [
     {
       "scored_year": 2022,
       "train_rows": 112918,
       "calibration_year": 2021,
       "scored_rows": 103887,
-      "boosting_rounds": 233,
-      "level_shift": 0.2103
+      "boosting_rounds": 144,
+      "level_shift": 0.2081
     },
     {
       "scored_year": 2023,
       "train_rows": 223476,
       "calibration_year": 2022,
       "scored_rows": 96607,
-      "boosting_rounds": 369,
-      "level_shift": 0.2192
+      "boosting_rounds": 259,
+      "level_shift": 0.2175
     },
     {
       "scored_year": 2024,
       "train_rows": 327363,
       "calibration_year": 2023,
       "scored_rows": 91316,
-      "boosting_rounds": 345,
-      "level_shift": 0.307
+      "boosting_rounds": 336,
+      "level_shift": 0.3061
     },
     {
       "scored_year": 2025,
       "train_rows": 423970,
       "calibration_year": 2024,
       "scored_rows": 85546,
-      "boosting_rounds": 449,
-      "level_shift": 0.3385
+      "boosting_rounds": 485,
+      "level_shift": 0.3375
     },
     {
       "scored_year": 2026,
       "train_rows": 515286,
       "calibration_year": 2025,
       "scored_rows": 36424,
-      "boosting_rounds": 425,
-      "level_shift": 0.2767
+      "boosting_rounds": 457,
+      "level_shift": 0.276
     }
   ],
   "sites": 544,
   "scored_crashes": 413780,
   "crashes_at_listed_sites": 20777,
   "worst_site": "AVENUE U @ GERRITSEN AVENUE",
-  "worst_excess": 0.3499,
-  "median_excess": 0.011,
-  "top_decile_excess": 0.1418,
-  "sites_above_z_95": 55,
+  "worst_excess": 0.3168,
+  "median_excess": 0.0106,
+  "top_decile_excess": 0.142,
+  "sites_above_z_95": 57,
   "sites_above_z_95_by_chance": 13.6,
   "dataset": {
-    "name": "collisions_corrected.parquet",
-    "dataset_version": 2,
-    "built_at": "2026-09-21T00:56:21.115262+00:00"
+    "name": "collisions_v3.parquet",
+    "dataset_version": 3,
+    "built_at": "2026-09-21T02:10:05.186619+00:00"
   }
 }
