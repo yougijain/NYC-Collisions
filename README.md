@@ -1,6 +1,6 @@
 # NYC Collisions: injury risk model and self-refreshing pipeline
 
-**DEPLOYED LIVE (Note: may take a second to load when prompted):** https://nyc-collisions-2020-2025.streamlit.app/
+**Live dashboard:** https://nyc-collisions-current.streamlit.app/ — the free tier sleeps after a quiet spell, so the first visit may take a moment to wake.
 
 Ingest NYC motor vehicle collision data, clean it, query it with SQL, model
 which crashes hurt people, and serve it all through an interactive dashboard.
