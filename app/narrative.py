@@ -48,7 +48,7 @@ def headline(bounds: pd.Series, metrics: pd.Series) -> str:
 
     return (
         f"Between {first} and {last}, New York City recorded "
-        f"**{crashes:,} crashes**. **{harmful:,}** of them hurt somebody — "
+        f"**{crashes:,} crashes**. **{harmful:,}** of them hurt somebody: "
         f"**{injured:,} people injured** and **{killed:,} killed**. "
         f"That is {_pct(harmful / crashes)} of every crash reported."
     )
@@ -74,10 +74,10 @@ def borough_takeaway(by_borough: pd.DataFrame) -> Optional[str]:
     return (
         f"{_titled(most['borough'])} has the most injuries "
         f"({int(most['total_injuries']):,}), mostly because it has the most "
-        f"crashes. Per crash the boroughs barely differ — "
+        f"crashes. Per crash the boroughs barely differ: "
         f"{_pct(safest['harm_rate'])} of crashes hurt someone in "
         f"{_titled(safest['borough'])} against "
-        f"{_pct(worst['harm_rate'])} in {_titled(worst['borough'])} — which "
+        f"{_pct(worst['harm_rate'])} in {_titled(worst['borough'])}. That "
         f"is why knowing the borough tells you so little about whether a "
         f"crash was serious."
     )
@@ -179,7 +179,7 @@ def fatality_takeaway(trends: pd.DataFrame) -> Optional[str]:
     per_month = total / len(trends)
     worst = trends.loc[trends["total_fatalities"].idxmax()]
     return (
-        f"{total:,} people were killed over these {len(trends)} months — "
+        f"{total:,} people were killed over these {len(trends)} months, "
         f"about {per_month:.0f} a month. The worst was "
         f"{pd.Timestamp(worst['month']).strftime('%B %Y')}, with "
         f"{int(worst['total_fatalities'])}."

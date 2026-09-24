@@ -1,10 +1,50 @@
-# NYC Collisions: injury risk model and self-refreshing pipeline
+# NYC Collisions: which intersections hurt people more than they should
 
-**Live dashboard:** https://nyc-collisions-current.streamlit.app/ — the free tier sleeps after a quiet spell, so the first visit may take a moment to wake.
+**[Open the live dashboard →](https://nyc-collisions-current.streamlit.app/)**
+ (free tier, so the first visit may take a moment to wake it)
 
-Ingest NYC motor vehicle collision data, clean it, query it with SQL, model
-which crashes hurt people, and serve it all through an interactive dashboard.
-The dataset refreshes itself weekly.
+<!-- generated:finding-headline -->
+**1,093 intersections** out of **637,256 crashes** since 2020 injure people more often than their own crashes account for. The worst of them runs **28 percentage points** above what its mix of crashes predicts.
+<!-- /generated:finding-headline -->
+
+![The dashboard's landing page: headline figures, the worst intersections, and
+the caveat that this is not a danger ranking](docs/img/dashboard.png)
+
+## What that means, in plain terms
+
+New York publishes a record of every reported car crash. Count those records
+by location and you mostly learn where the traffic is. The busiest junctions
+have the most crashes. That is not news.
+
+The harder question is where crashes *go badly*.
+
+Two sedans bumping at walking pace and a van hitting a cyclist are each one
+row in the data. They are not the same event. Every crash here gets a score
+for how likely it was to hurt somebody, based only on what was involved: the
+vehicles, the cause the officer wrote down, the type of road, the hour. Never
+on where it happened. Each intersection is then held against its own crashes.
+When a junction injures people more often than its own mix of crashes
+predicts, something about the place is worth a look.
+
+Think of it as a screening tool rather than a verdict. Tens of thousands of
+junctions narrow to a list short enough for one person to work through, and
+each entry comes with what is unusual about it.
+
+### What it deliberately does not claim
+
+This is not a ranking of the most dangerous intersections. Rather than put
+that in a disclaimer, the project went and measured it. NYC DOT publishes
+automated traffic counts; joining them on produces a per-vehicle rate for the
+sites they reach. Ranking by that rate gives a substantially different order.
+
+<!-- generated:exposure-lede -->
+Over the 425 sites a counter reaches, the two orderings agree at a rank correlation of only **0.27**.
+<!-- /generated:exposure-lede -->
+
+A site near the top of this list has crashes that injure people more often
+than their circumstances account for. That is a different claim from being
+the place you are most likely to get hurt. [The full measurement is further
+down](#what-it-does-not-prove).
 
 ## Description
 
@@ -14,7 +54,7 @@ publishes it as a GitHub Release asset. The Streamlit dashboard queries that
 Parquet with DuckDB and renders filters, charts and a heatmap over New York.
 
 Coverage is January 2020 to the present, and grows on its own. <!-- generated:dataset-headline -->
-The current build holds **637,256 crashes** through **2026-06-11**, of which 244,916 (38.4%) injured or killed someone: 326,869 people injured and 1,701 killed. Borough is known for 94.6% of them, against 69.3% as the source ships it.
+The current build holds **637,256 crashes** through **2026-06-11**. Of those, 244,916 (38.4%) injured or killed somebody: 326,869 people injured, 1,701 killed. Borough is known for 94.6% of them, against 69.3% as the source ships it.
 <!-- /generated:dataset-headline -->
 
 Those figures are generated, not typed. `scripts/dataset_facts.py` measures
@@ -144,7 +184,7 @@ second tab turns it into a list of intersections, ranked by one claim:
 > themselves account for
 
 <!-- generated:watchlist-headline -->
-**1,093 intersections** with at least 25 crashes between 2022-01-01 and 2026-06-11 qualify, over 413,780 scored crashes. The worst sits **27.6 points** above what its crash mix predicts; the top decile sits 13.7 points above. 102 clear z = 1.96, against roughly 27 expected from chance across that many sites — so the head of the list is signal and the tail is a screening queue, not a verdict.
+**1,093 intersections** with at least 25 crashes between 2022-01-01 and 2026-06-11 qualify, over 413,780 scored crashes. The worst sits **27.6 points** above what its crash mix predicts; the top decile sits 13.7 points above. 102 clear z = 1.96, against roughly 27 expected from chance across that many sites. The head of the list is signal. The tail is a screening queue.
 <!-- /generated:watchlist-headline -->
 
 <!-- generated:watchlist-examples -->
@@ -172,11 +212,11 @@ Three things make that number mean something:
   crashes and a 30-point excess is a weaker finding than one with 400 crashes
   and 15, and the ordering says so.
 
-The same scoring produces the factor table, which is the part a non-technical
+The same scoring produces the factor table, the part a non-technical
 reader repeats back.
 
 <!-- generated:factor-examples -->
-Crashes where the officer wrote *Lost Consciousness* injure someone 83.4% of the time, against 13.0% for *Oversized Vehicle*. Predicted and observed track within a couple of points across all 31 factors, which is the calibration check worth trusting most.
+Crashes where the officer wrote *Lost Consciousness* injure someone 83.4% of the time, against 13.0% for *Oversized Vehicle*. Predicted and observed track within a couple of points across all 31 factors. That agreement is the calibration check worth trusting most.
 <!-- /generated:factor-examples -->
 
 ```bash
@@ -185,7 +225,7 @@ python scripts/build_watchlist.py   # rewrites the three committed CSVs
 
 ### What it does not prove
 
-**This is not a ranking of dangerous intersections — and that is now measured
+**This is not a ranking of dangerous intersections, and that is now measured
 rather than asserted.** Every rate on the list is per *crash*: of the crashes
 at this junction, how many hurt somebody. The question a traffic engineer asks
 is per *vehicle*, and answering it needs to know how many vehicles pass
@@ -204,8 +244,8 @@ It is also why the watchlist is not re-ranked by it. A recorder sits on one segm
 <!-- /generated:exposure-coverage -->
 
 Read the list as what it is: sites whose crashes injure people more often than
-their circumstances account for. That is a screening question, not a verdict,
-and it is not the same as the site you are most likely to be hurt at.
+their circumstances account for. Read it as a screening question rather than
+a verdict, and not as the site you are most likely to be hurt at.
 
 What would close the gap is a count at every approach to a junction rather
 than on one segment of one street, taken in the window the crashes are drawn
@@ -343,11 +383,11 @@ schema changes or the fallback drifts far enough from the live data to matter.
 
 ## Help
 
-* **"No dataset available"** — run `python scripts/build_dataset.py --full`,
+* **"No dataset available"**: run `python scripts/build_dataset.py --full`,
   or set `NYC_COLLISIONS_DATA` to a Parquet path or URL.
-* **The dashboard shows old data** — the app caches the Release asset for six
+* **The dashboard shows old data**: the app caches the Release asset for six
   hours. Delete `.cache/` to force a re-download.
-* **Socrata returns 429** — you are being throttled. Set `SOCRATA_APP_TOKEN`;
+* **Socrata returns 429**: you are being throttled. Set `SOCRATA_APP_TOKEN`;
   tokens are free from the NYC Open Data portal.
 * For other issues, open an issue on the GitHub repo.
 

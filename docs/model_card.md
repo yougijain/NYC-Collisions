@@ -7,7 +7,7 @@ someone was injured or killed in it.
 
 The inputs are what a responding officer writes down: the vehicles involved,
 the contributing factors, the road type, the borough, the time. So this is a
-scoring model, not a forecast — it cannot tell you where the next crash will
+scoring model rather than a forecast. It cannot tell you where the next crash will
 be, and nothing in it claims to.
 
 The reason to want that probability is the watchlist. Comparing a site's
@@ -40,7 +40,7 @@ NYC Open Data, *Motor Vehicle Collisions — Crashes* (`h9gi-nx95`), cleaned by
 `scripts/clean.py`.
 
 <!-- generated:dataset-headline -->
-The current build holds **637,256 crashes** through **2026-06-11**, of which 244,916 (38.4%) injured or killed someone: 326,869 people injured and 1,701 killed. Borough is known for 94.6% of them, against 69.3% as the source ships it.
+The current build holds **637,256 crashes** through **2026-06-11**. Of those, 244,916 (38.4%) injured or killed somebody: 326,869 people injured, 1,701 killed. Borough is known for 94.6% of them, against 69.3% as the source ships it.
 <!-- /generated:dataset-headline -->
 
 Live figures in [`dataset_facts.md`](dataset_facts.md).
@@ -59,12 +59,12 @@ fitting noise.
 | `vehicle_1`, `vehicle_2` | The two vehicles, mapped from 1,385 source spellings onto 14 named classes |
 | `vehicle_count` | How many vehicles the report lists |
 | `factor_1`, `factor_2` | Contributing factors, with categories under 0.1% folded into Other |
-| `road_class` | Expressway, parkway, bridge, boulevard, avenue, street, road — read out of the street name |
+| `road_class` | Expressway, parkway, bridge, boulevard, avenue, street, road, read out of the street name |
 | `at_intersection` | Whether the report names a cross street |
 
 **Deliberately excluded.** The casualty counts, which are the target. And
 coordinates, street names and anything else identifying *where* a crash
-happened — if the model can see the site, it learns the site, and the gap the
+happened. If the model can see the site, it learns the site, and the gap the
 watchlist measures collapses to zero. Two tests enforce this: perturbing the
 casualty columns or the location columns must leave every feature unchanged.
 
@@ -85,14 +85,14 @@ hard enough that a random split would badly flatter the model.
 support, so nothing is one-hot expanded and "Sedan" stays "Sedan" in
 everything the model reports about itself. Learning rate 0.06, 31 leaves,
 minimum 100 samples per leaf, L2 1.0; early stopping picks the round count
-and settles near 700. The curve is flat well before that — a third of those
-rounds gets within 0.002 ROC-AUC — so this is not a tuned number.
+and settles near 700. The curve is flat well before that; a third of those
+rounds gets within 0.002 ROC-AUC, so this is not a tuned number.
 
 **Calibration.** A single additive shift in log-odds, fitted on 2024. A full
 Platt scaling returns a slope of 0.967 and lands within 0.0001 Brier of it,
 and isotonic the same, so the extra parameters buy nothing. The drift here is
-a level change, and one number that can be read out loud — "the city ran 0.34
-log-odds hotter than the model was trained for" — is the right shape for it.
+a level change. One number that can be read out loud, "the city ran 0.34
+log-odds hotter than the model was trained for", is the right shape for it.
 
 ## Results
 
@@ -112,15 +112,15 @@ Observed injury rate on the test fold: 0.432.
 
 **The baseline is the point of comparison.** Borough and hour are one SQL
 query, and they carry almost no signal, barely beating a coin flip. That is
-worth knowing on its own — *when* and *which borough* tell
+worth knowing on its own: *when* and *which borough* tell
 you very little about whether a crash hurt someone. What the vehicles were
 tells you a great deal.
 
 **Brier is the number that matters** here, because the watchlist subtracts
 predicted rates from observed ones and so depends on the probabilities being
-right, not just ordered right. Calibration improves Brier measurably while
-leaving ROC-AUC untouched to four places — a level shift is monotone,
-so it cannot reorder anything. That is the entire difference between the two
+right rather than merely ordered right. Calibration improves Brier measurably
+while leaving ROC-AUC untouched to four places. A level shift is monotone,
+so it cannot reorder anything. Hence the entire difference between the two
 model rows.
 
 **What the model is using**, by test ROC-AUC lost when each feature is
@@ -149,7 +149,7 @@ is an e-bike, and no amount of knowing the hour gets you that.
 ## Limitations
 
 **The exposure denominator is partial.** This is the big one. Every rate the
-model produces is per *crash* — of the crashes here, how many hurt somebody —
+model produces is per *crash*: of the crashes here, how many hurt somebody,
 because the collision data says nothing about how many vehicles passed
 through. A site with many crashes may simply be a site with many vehicles.
 
@@ -183,9 +183,9 @@ reported crashes that injured someone climbed from 0.296 in 2020 to 0.440 in
 2024 and has held near 0.43 since. New York's roads did not get 50% more
 dangerous in four years. The likelier story is that fewer
 property-damage-only crashes are being reported, which mechanically raises
-the share that involved injury — and the share of crashes logged to a street
+the share that involved injury. The share of crashes logged to a street
 address rather than an intersection rose from 0.261 to 0.323 over the same
-period, which is roughly what that looks like. The three-fold split and the
+period, roughly what that looks like. The three-fold split and the
 level shift handle this operationally, but it means the model's absolute
 probabilities describe *reported* crashes and will drift again.
 
@@ -196,9 +196,9 @@ what happened. A site whose crashes are documented more carefully will score
 differently from one whose are not.
 
 **Missing location is informative, and that is a problem.** Crashes with no
-street name have an injury rate of 0.249 against 0.36–0.47 for named roads —
+street name have an injury rate of 0.249 against 0.36–0.47 for named roads.
 because they are disproportionately the minor property-damage reports. The
-model uses this through `road_class = Unknown`, which is legitimate for
+model uses this through `road_class = Unknown`, legitimate for
 scoring a crash but means the Unknown category is carrying a reporting
 artifact rather than anything about roads.
 
@@ -219,7 +219,7 @@ ranking mean anything.
 **Sites are scored out of sample, rolling forward.** Scoring a crash with a
 model that trained on it shrinks its residual, and the residual is the whole
 product. Each year is scored by a model trained on everything before the
-previous year and calibrated on the previous one — five fits for 2022 through
+previous year and calibrated on the previous one: five fits for 2022 through
 2026. 2020 and 2021 go unscored, which costs little, since they sit in a
 different reporting regime anyway.
 
