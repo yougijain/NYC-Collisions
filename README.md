@@ -8,7 +8,7 @@
  (first visit may take a moment to wake the app)
 
 <!-- generated:finding-headline -->
-**1,093 intersections** out of **637,256 crashes** since 2020 injure people more often than their own crashes account for. The worst of them runs **28 percentage points** above what its mix of crashes predicts.
+Across **637,256 crashes** since 2020, **1,093 intersections** stand out: people get hurt there more often than the kinds of crashes happening there would predict. At the worst of them, **28 percentage points** more often.
 <!-- /generated:finding-headline -->
 
 ![The dashboard's landing page: headline figures, the worst intersections, and
@@ -27,8 +27,8 @@ row in the data. They are not the same event. Every crash here gets a score
 for how likely it was to hurt somebody, based only on what was involved: the
 vehicles, the cause the officer wrote down, the type of road, the hour. Never
 on where it happened. Each intersection is then held against its own crashes.
-When a junction injures people more often than its own mix of crashes
-predicts, something about the place is worth a look.
+When people get hurt at a junction more often than the kinds of crashes
+happening there would predict, the place is worth a look.
 
 Think of it as a screening tool rather than a verdict. Tens of thousands of
 junctions narrow to a list short enough for one person to work through, and
@@ -45,8 +45,8 @@ sites they reach. Ranking by that rate gives a substantially different order.
 Over the 425 sites a counter reaches, the two orderings agree at a rank correlation of only **0.27**.
 <!-- /generated:exposure-lede -->
 
-A site near the top of this list has crashes that injure people more often
-than their circumstances account for. That is a different claim from being
+A site near the top of this list hurts people more often than the kinds of
+crashes happening there would predict. That is a different claim from being
 the place you are most likely to get hurt. [The full measurement is further
 down](#what-it-does-not-prove).
 
@@ -248,8 +248,9 @@ It is also why the watchlist is not re-ranked by it. A recorder sits on one segm
 <!-- /generated:exposure-coverage -->
 
 Read the list as what it is: sites whose crashes injure people more often than
-their circumstances account for. Read it as a screening question rather than
-a verdict, and not as the site you are most likely to be hurt at.
+the kinds of crashes happening there would predict. Read it as a screening
+question rather than a verdict, and not as the site you are most likely to
+be hurt at.
 
 What would close the gap is a count at every approach to a junction rather
 than on one segment of one street, taken in the window the crashes are drawn

@@ -173,8 +173,8 @@ def _exposure_caveat() -> None:
          "**This is not a ranking of dangerous intersections.** ")
         + exposure_claim(exposure, summary)
         + " So a site high on this list is one whose crashes injure people "
-          "more often than their circumstances account for, not a site you "
-          "are most likely to be hurt at."
+          "more often than the kinds of crashes happening there would predict, "
+          "not a site you are most likely to be hurt at."
     )
 
 

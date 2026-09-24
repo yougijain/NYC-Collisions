@@ -40,7 +40,7 @@ ax.text(0.075, 0.845, "NYC COLLISIONS", color=palette.INK_MUTED,
 
 ax.text(0.075, 0.585, f"{wl['sites']:,} intersections", color=palette.INK,
         fontsize=72, fontweight="bold", **t)
-ax.text(0.075, 0.435, "injure people more often than their own crashes explain",
+ax.text(0.075, 0.435, "where people get hurt more than the crashes there predict",
         color=palette.INK, fontsize=27, **t)
 
 ax.text(0.075, 0.275,

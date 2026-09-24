@@ -16,7 +16,7 @@ def exposure_caveat() -> str:
         + exposure_claim(*exposure_data())
         + " Every rate here is per crash, never per vehicle passing "
           "through. It says one thing only: these sites injure people more "
-          "often than their crash mix explains."
+          "often than the kinds of crashes happening there would predict."
     )
 
 
@@ -40,7 +40,7 @@ def render(con, bounds: pd.Series, metrics: pd.Series) -> None:
         f"factors, the road type, the hour. Never from where it "
         f"happened. Comparing that against what actually happened leaves "
         f"**{summary.get('sites', len(sites)):,} intersections** where more "
-        f"crashes injured someone than their circumstances account for."
+        f"crashes injured someone than the kinds of crashes there would predict."
     )
 
     preview = sites.head(PREVIEW_SITES).copy()
