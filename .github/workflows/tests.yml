@@ -15,7 +15,10 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          # Read from .python-version, which is also what the Streamlit
+          # deployment builds against. One pin, so CI cannot pass on a
+          # Python the deployed app never runs on.
+          python-version-file: .python-version
           cache: pip
 
       - run: pip install -r requirements-ml.txt
@@ -30,3 +33,48 @@ jobs:
       # if someone edits a number by hand instead of regenerating it.
       - name: Check the documentation matches the generated figures
         run: python scripts/sync_docs.py --check
+
+  # The suite above installs requirements-ml.txt. Streamlit Cloud installs
+  # requirements.txt, on the Python in .python-version, and nothing else --
+  # so a pin with no wheel for that Python, or a view that reaches for a
+  # training-only import, breaks the deployed app while CI stays green.
+  # That is not hypothetical: pyarrow 17.0.0 has no Python 3.13 wheel, fell
+  # back to a source build, and took the site down while every test passed.
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: pip
+
+      - name: Install only what the deployment installs
+        run: pip install -r requirements.txt
+
+      - name: Import every page with the training extras absent
+        run: |
+          python - <<'EOF'
+          import importlib
+          import sys
+
+          sys.path.insert(0, "app")
+          for name in ("db", "palette", "narrative", "dashboard",
+                       "views.finding", "views.crashes",
+                       "views.watchlist", "views.method"):
+              importlib.import_module(name)
+              print(f"ok  {name}")
+
+          extras = {"sklearn", "pyproj", "scipy", "matplotlib", "joblib"}
+          leaked = sorted(extras & {m.split(".")[0] for m in sys.modules})
+          if leaked:
+              raise SystemExit(
+                  f"the dashboard imported training-only packages: {leaked}. "
+                  f"They are in requirements-ml.txt, which the deployment "
+                  f"does not install."
+              )
+          print("no training-only imports reached the app")
+          EOF

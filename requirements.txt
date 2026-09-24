@@ -4,4 +4,4 @@ pydeck==0.9.1        # heatmap
 pytest==8.4.0        # automated data tests
 requests==2.31.0     # NYC Open Data (Socrata) API client
 duckdb==1.1.3        # SQL engine over the Parquet dataset
-pyarrow==17.0.0      # Parquet read/write
+pyarrow==21.0.0      # Parquet read/write (17.0.0 has no Python 3.13 wheel)
