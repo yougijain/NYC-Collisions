@@ -15,6 +15,7 @@ import streamlit as st
 
 import db
 import palette
+from views.common import exposure_claim, exposure_data
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 METRICS_PATH = ROOT / "reports" / "injury_risk" / "metrics.json"
@@ -37,14 +38,10 @@ NYC Open Data (h9gi-nx95)
      └──►  injury risk model  ──►  intersection watchlist
 """
 
+# Everything here is fixed prose. The exposure limitation is not -- it is
+# built by limitations() below, because how far the traffic counts reach
+# changes every time they are refetched.
 LIMITATIONS = [
-    (
-        "No exposure denominator",
-        "There are crashes here but no traffic counts, so a busy "
-        "intersection and a dangerous one look alike. Every rate is per "
-        "crash, never per vehicle passing through. Joining NYC DOT "
-        "automated volume counts is what would fix it.",
-    ),
     (
         "Reported crashes are not all crashes, and the gap moves",
         "The share of reported crashes that injured someone climbed from "
@@ -72,6 +69,32 @@ def _metrics() -> Optional[Dict]:
     if not METRICS_PATH.exists():
         return None
     return json.loads(METRICS_PATH.read_text(encoding="utf-8"))
+
+
+
+def limitations() -> list:
+    """The caveats, with the exposure one measured from the current join.
+
+    It led the list as "no exposure denominator" long after the denominator
+    arrived, because it was prose in a constant while the watchlist tab was
+    reading the join. Now it is built from the same numbers.
+    """
+    exposure, summary = exposure_data()
+    covered = (
+        "The exposure denominator is partial"
+        if not exposure.empty and summary
+        else "No exposure denominator"
+    )
+    return [(
+        covered,
+        exposure_claim(exposure, summary)
+        + " Every rate the model produces is per crash, never per vehicle "
+          "passing through, so a busy intersection and a dangerous one can "
+          "still look alike. Closing the gap needs a count at every "
+          "approach to a junction, taken in the window the crashes are "
+          "drawn from; DOT's counts are week-long deployments, not a "
+          "network.",
+    )] + LIMITATIONS
 
 
 def render() -> None:
@@ -184,7 +207,7 @@ def render() -> None:
 
     st.divider()
     st.subheader("What this does not prove")
-    for title, body in LIMITATIONS:
+    for title, body in limitations():
         with st.expander(title):
             st.write(body)
 

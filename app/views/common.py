@@ -43,6 +43,42 @@ def exposure_data():
     return db.load_exposure(), db.load_exposure_summary()
 
 
+def exposure_claim(exposure: pd.DataFrame, summary: dict) -> str:
+    """Why the watchlist is not a danger ranking, in one sentence.
+
+    Three tabs make this claim and they drifted. The landing page and the
+    method tab went on saying "no traffic counts" for a release after the
+    DOT join shipped, while the watchlist tab a click away was quoting the
+    425 counters it found -- the display contradicting itself, which is the
+    failure this dashboard was rebuilt to stop doing.
+
+    So the sentence lives here and every tab frames the same one. Callers
+    pass the data in rather than it being read here, so a tab can be tested
+    against an empty join without reaching through the cache.
+
+    Args:
+        exposure: Matched sites, from `exposure_data()`.
+        summary: Its coverage summary.
+
+    Returns:
+        The measured claim, or the assertion it replaces when no traffic
+        counts have been joined yet.
+    """
+    if exposure.empty or not summary:
+        return (
+            "There are crashes in this data but no traffic counts, so a "
+            "junction with many crashes may simply be a junction with many "
+            "vehicles."
+        )
+    return (
+        f"NYC DOT traffic counts reach {summary['matched']:,} of the "
+        f"{summary['sites_located']:,} located sites. Ranking those by "
+        f"crashes per vehicle instead of by crash mix gives a substantially "
+        f"different order \u2014 the two agree at a rank correlation of only "
+        f"{summary['spearman_excess_vs_per_vehicle']:.2f}."
+    )
+
+
 def say(sentence: Optional[str]) -> None:
     """Put a chart's takeaway underneath it, if there is one to make."""
     if sentence:

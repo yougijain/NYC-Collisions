@@ -6,7 +6,7 @@ import altair as alt
 import streamlit as st
 
 import palette
-from views.common import exposure_data, watchlist_data
+from views.common import exposure_claim, exposure_data, watchlist_data
 
 # Enough of the watchlist to see on a map without it becoming a blur.
 WATCHLIST_MAP_SITES = 60
@@ -166,27 +166,15 @@ def _exposure_caveat() -> None:
     is worth more than saying it.
     """
     exposure, summary = exposure_data()
-    if exposure.empty or not summary:
-        st.warning(
-            "**This does not measure how dangerous an intersection is.** "
-            "There are crashes in this data but no traffic counts here, so "
-            "a junction with many crashes may simply be a junction with "
-            "many vehicles. Every rate is per crash, never per vehicle "
-            "passing through."
-        )
-        return
-
-    rho = summary.get("spearman_excess_vs_per_vehicle")
+    measured = not exposure.empty and bool(summary)
     st.warning(
-        f"**This is not a ranking of dangerous intersections, and that is "
-        f"now measured rather than assumed.** NYC DOT traffic counts reach "
-        f"{summary['matched']:,} of these {summary['sites_located']:,} "
-        f"sites. Ranking those by crashes per vehicle instead of by crash "
-        f"mix gives a substantially different order — the two agree at a "
-        f"rank correlation of only {rho:.2f}. So a site high on this list "
-        f"is one whose crashes injure people more often than their "
-        f"circumstances account for, which is not the same as a site you "
-        f"are most likely to be hurt at."
+        ("**This is not a ranking of dangerous intersections, and that is "
+         "now measured rather than assumed.** " if measured else
+         "**This is not a ranking of dangerous intersections.** ")
+        + exposure_claim(exposure, summary)
+        + " So a site high on this list is one whose crashes injure people "
+          "more often than their circumstances account for, which is not "
+          "the same as a site you are most likely to be hurt at."
     )
 
 
