@@ -1,7 +1,7 @@
 # NYC Collisions: which intersections hurt people more than they should
 
 **[Open the live dashboard →](https://nyc-collisions-current.streamlit.app/)**
- (free tier, so the first visit may take a moment to wake it)
+ (first visit may take a moment to wake the app)
 
 <!-- generated:finding-headline -->
 **1,093 intersections** out of **637,256 crashes** since 2020 injure people more often than their own crashes account for. The worst of them runs **28 percentage points** above what its mix of crashes predicts.
