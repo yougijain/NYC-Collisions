@@ -139,7 +139,9 @@ jobs:
       - name: Rewrite the figures in the prose
         env:
           NYC_COLLISIONS_DATA: ${{ env.ASSET }}
-        run: python scripts/sync_docs.py
+        run: |
+          python scripts/sync_docs.py
+          python scripts/build_social_card.py
 
       - name: Commit the figures and scores
         run: |
@@ -154,6 +156,7 @@ jobs:
                   data/clean/injury_exposure.csv \
                   data/clean/exposure_summary.json \
                   reports/injury_risk/ \
+                  docs/img/social-preview.png \
                   README.md \
                   docs/model_card.md
 
