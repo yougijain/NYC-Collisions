@@ -153,11 +153,12 @@ def feature_importance(metrics: Dict) -> str:
 def finding_headline(facts: Dict, summary: Dict) -> str:
     """The one sentence a reader gets before deciding to keep reading."""
     return (
-        f"**{summary['sites']:,} intersections** out of "
-        f"**{facts['rows']:,} crashes** since 2020 injure people more often "
-        f"than their own crashes account for. The worst of them runs "
-        f"**{summary['worst_excess'] * 100:.0f} percentage points** above "
-        f"what its mix of crashes predicts."
+        f"Across **{facts['rows']:,} crashes** since 2020, "
+        f"**{summary['sites']:,} intersections** stand out: people get hurt "
+        f"there more often than the kinds of crashes happening there would "
+        f"predict. At the worst of them, "
+        f"**{summary['worst_excess'] * 100:.0f} percentage points** more "
+        f"often."
     )
 
 
