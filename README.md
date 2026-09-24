@@ -1,5 +1,9 @@
 # NYC Collisions: which intersections hurt people more than they should
 
+[![Tests](https://github.com/yougijain/NYC-Collisions/actions/workflows/tests.yml/badge.svg)](https://github.com/yougijain/NYC-Collisions/actions/workflows/tests.yml)
+[![Refresh dataset](https://github.com/yougijain/NYC-Collisions/actions/workflows/refresh-data.yml/badge.svg)](https://github.com/yougijain/NYC-Collisions/actions/workflows/refresh-data.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **[Open the live dashboard →](https://nyc-collisions-current.streamlit.app/)**
  (first visit may take a moment to wake the app)
 
