@@ -1,10 +1,53 @@
-# NYC Collisions: injury risk model and self-refreshing pipeline
+# NYC Collisions — which intersections hurt people more than they should
 
-**Live dashboard:** https://nyc-collisions-current.streamlit.app/ — the free tier sleeps after a quiet spell, so the first visit may take a moment to wake.
+**[Open the live dashboard →](https://nyc-collisions-current.streamlit.app/)**
+ · free tier, so the first visit may take a moment to wake it
 
-Ingest NYC motor vehicle collision data, clean it, query it with SQL, model
-which crashes hurt people, and serve it all through an interactive dashboard.
-The dataset refreshes itself weekly.
+<!-- generated:finding-headline -->
+Across **637,256 crashes** since 2020, **1,093 intersections** stand out: when a crash happens there, someone gets hurt noticeably more often than that crash's own circumstances account for. At the worst of them, **28 percentage points** more often than its mix of crashes predicts.
+<!-- /generated:finding-headline -->
+
+![The dashboard's landing page: headline figures, the worst intersections, and
+the caveat that this is not a danger ranking](docs/img/dashboard.png)
+
+## What that means, in plain terms
+
+New York publishes a record of every reported car crash. Count those records by
+location and you mostly learn where the traffic is — the busiest junctions have
+the most crashes, which is neither surprising nor useful.
+
+This asks a harder question. Not *where do crashes happen*, but **where do
+crashes go badly?**
+
+Two sedans bumping at walking pace and a van hitting a cyclist are each one row
+in the data, and they are plainly not the same event. So every crash here is
+scored for how likely it was to hurt somebody, judged only on **what was
+involved** — the vehicles, the cause the officer recorded, the type of road,
+the hour — and never on **where it happened**. Each intersection is then
+compared against its own crashes. A junction whose crashes injure people more
+often than that mix of crashes predicts is one worth sending somebody to look
+at.
+
+That is a screening tool, not a verdict. It narrows tens of thousands of
+junctions down to a list short enough for a person to work through, and says
+for each one what is unusual about it.
+
+### What it deliberately does not claim
+
+It is **not** a ranking of the most dangerous intersections — and rather than
+say so in a disclaimer, the project went and measured it. NYC DOT publishes
+automated traffic counts. Joining them on gives a per-vehicle rate for the
+sites they reach, and ranking by that rate produces a substantially different
+order.
+
+<!-- generated:exposure-lede -->
+The two orderings agree at a rank correlation of only **0.27**, over the 425 of these sites a counter reaches.
+<!-- /generated:exposure-lede -->
+
+So a site near the top of this list is one whose crashes injure people more
+often than their circumstances account for, which is not the same as the site
+you are most likely to be hurt at. [The full measurement is
+further down](#what-it-does-not-prove).
 
 ## Description
 

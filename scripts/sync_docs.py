@@ -150,6 +150,18 @@ def feature_importance(metrics: Dict) -> str:
     )
 
 
+def finding_headline(facts: Dict, summary: Dict) -> str:
+    """The one sentence a reader gets before deciding to keep reading."""
+    return (
+        f"Across **{facts['rows']:,} crashes** since 2020, "
+        f"**{summary['sites']:,} intersections** stand out: when a crash "
+        f"happens there, someone gets hurt noticeably more often than that "
+        f"crash's own circumstances account for. At the worst of them, "
+        f"**{summary['worst_excess'] * 100:.0f} percentage points** more "
+        f"often than its mix of crashes predicts."
+    )
+
+
 def watchlist_headline(summary: Dict) -> str:
     window = summary["window"]
     return (
@@ -215,6 +227,15 @@ def exposure_coverage(summary: Dict) -> str:
     )
 
 
+def exposure_lede(summary: Dict) -> str:
+    """The one-line version of the caveat, for the top of the README."""
+    return (
+        f"The two orderings agree at a rank correlation of only "
+        f"**{summary['spearman_excess_vs_per_vehicle']:.2f}**, over the "
+        f"{summary['matched']:,} of these sites a counter reaches."
+    )
+
+
 def factor_examples(factors) -> str:
     """The loudest and the quietest contributing factor, as a sentence."""
     ranked = factors.sort_values("predicted_rate", ascending=False)
@@ -262,12 +283,15 @@ def build_blocks() -> Dict[str, str]:
 
     summary = _load(WATCHLIST_SUMMARY)
     if summary:
+        if facts:
+            blocks["finding-headline"] = finding_headline(facts, summary)
         blocks["watchlist-headline"] = watchlist_headline(summary)
         blocks["watchlist-scope"] = watchlist_scope(summary)
 
     exposure = _load(EXPOSURE_SUMMARY)
     if exposure:
         blocks["exposure-coverage"] = exposure_coverage(exposure)
+        blocks["exposure-lede"] = exposure_lede(exposure)
 
     import pandas as pd
 
