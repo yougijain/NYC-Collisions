@@ -74,8 +74,8 @@ def exposure_claim(exposure: pd.DataFrame, summary: dict) -> str:
         f"NYC DOT traffic counts reach {summary['matched']:,} of the "
         f"{summary['sites_located']:,} located sites. Ranking those by "
         f"crashes per vehicle instead of by crash mix gives a substantially "
-        f"different order \u2014 the two agree at a rank correlation of only "
-        f"{summary['spearman_excess_vs_per_vehicle']:.2f}."
+        f"different order, agreeing with this one at a rank correlation of "
+        f"only {summary['spearman_excess_vs_per_vehicle']:.2f}."
     )
 
 

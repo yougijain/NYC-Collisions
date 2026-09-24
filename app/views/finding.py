@@ -36,8 +36,8 @@ def render(con, bounds: pd.Series, metrics: pd.Series) -> None:
     st.subheader("The intersections worth looking at")
     st.markdown(
         f"Every crash is scored for how likely it was to hurt somebody, "
-        f"from the **crash mix alone** — the vehicles, the contributing "
-        f"factors, the road type, the hour — and never from where it "
+        f"from the **crash mix alone**: the vehicles, the contributing "
+        f"factors, the road type, the hour. Never from where it "
         f"happened. Comparing that against what actually happened leaves "
         f"**{summary.get('sites', len(sites)):,} intersections** where more "
         f"crashes injured someone than their circumstances account for."

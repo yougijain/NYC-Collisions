@@ -82,7 +82,7 @@ def _exposure_section(boroughs: list[str]) -> None:
         f"NYC DOT puts automated recorders on a street for a week or two "
         f"at a time. {summary['matched']:,} of the "
         f"{summary['sites_located']:,} located sites have one within 150m "
-        f"that names one of their own streets, which is enough to say how "
+        f"that names one of their own streets. Close enough to say how "
         f"often a vehicle passing through ends up in a crash that hurt "
         f"somebody."
     )
@@ -136,7 +136,7 @@ def _exposure_note() -> None:
             f"recorder sits on one segment, not across a junction, and "
             f"{summary['single_direction_counts']:,} of "
             f"{summary['matched']:,} matched counters cover a single "
-            f"direction — roughly half the traffic on a two-way street. "
+            f"direction, roughly half the traffic on a two-way street. "
             f"Sort by crashes per vehicle and the top is whichever junction "
             f"has the most under-measured traffic, not the most dangerous "
             f"one.\n\n"
@@ -173,8 +173,8 @@ def _exposure_caveat() -> None:
          "**This is not a ranking of dangerous intersections.** ")
         + exposure_claim(exposure, summary)
         + " So a site high on this list is one whose crashes injure people "
-          "more often than their circumstances account for, which is not "
-          "the same as a site you are most likely to be hurt at."
+          "more often than their circumstances account for, not a site you "
+          "are most likely to be hurt at."
     )
 
 
@@ -204,8 +204,8 @@ def render(boroughs: list[str], basemap) -> None:
 
     st.markdown(
         "Every crash is scored for the probability it injured someone, from "
-        "the **crash mix alone** — the vehicles, the contributing factors, "
-        "the road type, the hour — and never from where it happened. A site's "
+        "the **crash mix alone**: the vehicles, the contributing factors, "
+        "the road type, the hour. Never from where it happened. A site's "
         "**excess** is how much more often its crashes actually injured "
         "someone than that mix accounts for. Sites are ordered by the "
         "conservative end of that estimate, so a site with 400 crashes is not "
@@ -289,8 +289,8 @@ def render(boroughs: list[str], basemap) -> None:
     st.subheader("Contributing factors by predicted injury risk")
     st.caption(
         "Across every scored crash. The predicted column is the model's; the "
-        "observed column is what happened. They track closely, which is the "
-        "calibration check worth trusting most."
+        "observed column is what happened. They track closely. That agreement "
+        "is the calibration check worth trusting most."
     )
 
     if factors.empty:

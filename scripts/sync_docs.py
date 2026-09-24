@@ -90,9 +90,9 @@ def _load(path: Path) -> Optional[Dict]:
 def dataset_headline(facts: Dict) -> str:
     return (
         f"The current build holds **{facts['rows']:,} crashes** through "
-        f"**{facts['last_crash'][:10]}**, of which {facts['injury_crashes']:,} "
-        f"({facts['injury_crash_rate']:.1%}) injured or killed someone: "
-        f"{facts['people_injured']:,} people injured and "
+        f"**{facts['last_crash'][:10]}**. Of those, {facts['injury_crashes']:,} "
+        f"({facts['injury_crash_rate']:.1%}) injured or killed somebody: "
+        f"{facts['people_injured']:,} people injured, "
         f"{facts['people_killed']:,} killed. Borough is known for "
         f"{facts['borough_known_after_resolution']:.1%} of them, against "
         f"{facts['borough_known_at_source']:.1%} as the source ships it."
@@ -153,12 +153,11 @@ def feature_importance(metrics: Dict) -> str:
 def finding_headline(facts: Dict, summary: Dict) -> str:
     """The one sentence a reader gets before deciding to keep reading."""
     return (
-        f"Across **{facts['rows']:,} crashes** since 2020, "
-        f"**{summary['sites']:,} intersections** stand out: when a crash "
-        f"happens there, someone gets hurt noticeably more often than that "
-        f"crash's own circumstances account for. At the worst of them, "
-        f"**{summary['worst_excess'] * 100:.0f} percentage points** more "
-        f"often than its mix of crashes predicts."
+        f"**{summary['sites']:,} intersections** out of "
+        f"**{facts['rows']:,} crashes** since 2020 injure people more often "
+        f"than their own crashes account for. The worst of them runs "
+        f"**{summary['worst_excess'] * 100:.0f} percentage points** above "
+        f"what its mix of crashes predicts."
     )
 
 
@@ -173,8 +172,8 @@ def watchlist_headline(summary: Dict) -> str:
         f"{summary['top_decile_excess'] * 100:.1f} points above. "
         f"{summary['sites_above_z_95']} clear z = 1.96, against roughly "
         f"{summary['sites_above_z_95_by_chance']:.0f} expected from chance "
-        f"across that many sites — so the head of the list is signal and the "
-        f"tail is a screening queue, not a verdict."
+        f"across that many sites. The head of the list is signal. The tail "
+        f"is a screening queue."
     )
 
 
@@ -230,9 +229,9 @@ def exposure_coverage(summary: Dict) -> str:
 def exposure_lede(summary: Dict) -> str:
     """The one-line version of the caveat, for the top of the README."""
     return (
-        f"The two orderings agree at a rank correlation of only "
-        f"**{summary['spearman_excess_vs_per_vehicle']:.2f}**, over the "
-        f"{summary['matched']:,} of these sites a counter reaches."
+        f"Over the {summary['matched']:,} sites a counter reaches, the two "
+        f"orderings agree at a rank correlation of only "
+        f"**{summary['spearman_excess_vs_per_vehicle']:.2f}**."
     )
 
 
@@ -245,8 +244,8 @@ def factor_examples(factors) -> str:
         f"{top['predicted_rate']:.1%} of the time, against "
         f"{bottom['predicted_rate']:.1%} for *{bottom['factor']}*. Predicted "
         f"and observed track within a couple of points across all "
-        f"{len(factors)} factors, which is the calibration check worth "
-        f"trusting most."
+        f"{len(factors)} factors. That agreement is the calibration check "
+        f"worth trusting most."
     )
 
 

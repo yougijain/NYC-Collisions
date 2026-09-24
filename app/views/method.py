@@ -46,7 +46,7 @@ LIMITATIONS = [
         "Reported crashes are not all crashes, and the gap moves",
         "The share of reported crashes that injured someone climbed from "
         "0.30 in 2020 to 0.44 in 2024. New York's roads did not get 50% "
-        "more dangerous in four years — fewer property-damage-only crashes "
+        "more dangerous in four years. Fewer property-damage-only crashes "
         "are being filed, which mechanically raises the share of what is "
         "left that hurt somebody.",
     ),
@@ -144,8 +144,8 @@ def render() -> None:
     )
     st.caption(
         f"Brier matters more than ROC-AUC here, because the watchlist "
-        f"subtracts predicted rates from observed ones — the probabilities "
-        f"have to be right, not just ordered right. The model removes "
+        f"subtracts predicted rates from observed ones, so the probabilities "
+        f"have to be right rather than merely ordered right. The model removes "
         f"{rows[MODEL].get('brier_skill_vs_baseline', 0):.1%} of the "
         f"baseline's squared error."
     )
@@ -175,7 +175,7 @@ def render() -> None:
     st.caption(
         "A random split would let the model see crashes from the same week "
         "it is scored on. The injury rate climbs steadily across these "
-        "folds, which is the drift a random split would hide — and the "
+        "folds, the drift a random split would hide. The "
         "reason for a calibration year between training and test."
     )
 
@@ -186,7 +186,7 @@ def render() -> None:
             "Predicted against observed, in equal-count bins. On the "
             "diagonal means a crash the model calls 70% likely to hurt "
             "somebody does so about 70% of the time. The baseline barely "
-            "leaves the middle of the range, which is what no "
+            "leaves the middle of the range, where no "
             "discrimination looks like."
         )
 
@@ -201,7 +201,7 @@ def render() -> None:
         )
         st.caption(
             "Test ROC-AUC lost when each feature is shuffled. What was hit "
-            "and why dominates; when and where barely register — which is "
+            "and why dominates; when and where barely register, which is "
             "why the borough-and-hour baseline does so badly."
         )
 
