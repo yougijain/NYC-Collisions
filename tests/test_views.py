@@ -87,6 +87,45 @@ def test_exposure_boroughs_are_spelled_the_way_the_app_filters_them():
     assert set(exposure["borough"]) <= set(sites["borough"])
 
 
+def test_no_tab_denies_traffic_counts_while_the_join_has_them():
+    """The landing page and the method tab each kept their own copy of the
+    watchlist's caveat, and both went on saying "no traffic counts" for a
+    release after the DOT join shipped -- while the watchlist tab, one click
+    away, quoted the 425 counters it had found. Whatever a tab says about
+    exposure now has to come from the join."""
+    from views import common, finding, method
+
+    exposure, summary = common.exposure_data()
+    assert not exposure.empty and summary, "no exposure built to check against"
+
+    claims = [finding.exposure_caveat(), method.limitations()[0][1]]
+    for claim in claims:
+        assert "no traffic counts" not in claim
+        assert f"{summary['matched']:,}" in claim
+
+
+def test_every_tab_states_the_same_exposure_coverage():
+    """One join, one number. Three hand-written copies is how it drifted."""
+    from views import common, finding, method
+
+    _, summary = common.exposure_data()
+    reach = f"{summary['matched']:,} of the {summary['sites_located']:,}"
+    for claim in (finding.exposure_caveat(), method.limitations()[0][1]):
+        assert reach in claim
+
+
+def test_the_claim_falls_back_when_no_counts_are_joined():
+    """A fresh clone, or a build where the join was skipped."""
+    import pandas as pd
+
+    from views import common
+
+    assert "no traffic counts" in common.exposure_claim(pd.DataFrame(), {})
+    assert "no traffic counts" in common.exposure_claim(
+        pd.DataFrame({"site": ["A @ B"]}), {}
+    )
+
+
 def test_the_watchlist_still_says_something_with_no_traffic_counts(monkeypatch):
     """A fresh clone, or a build where the join was skipped. The caveat has
     to fall back to the assertion rather than reaching into an empty

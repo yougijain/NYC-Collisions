@@ -4,19 +4,20 @@ import pandas as pd
 import streamlit as st
 
 import narrative
-from views.common import query, watchlist_data
+from views.common import exposure_claim, exposure_data, query, watchlist_data
 
 # Enough of the watchlist to show what the list is, not enough to scroll.
 PREVIEW_SITES = 6
 
-EXPOSURE_CAVEAT = (
-    "**This is not a ranking of dangerous intersections.** There are "
-    "crashes in this data but no traffic counts, so a junction with many "
-    "crashes may simply be a junction with many vehicles. Every rate here "
-    "is per crash, never per vehicle passing through. It says one thing "
-    "only: these sites injure people more often than their crash mix "
-    "explains."
-)
+def exposure_caveat() -> str:
+    """What the list is not. The middle of it is measured, not asserted."""
+    return (
+        "**This is not a ranking of dangerous intersections.** "
+        + exposure_claim(*exposure_data())
+        + " Every rate here is per crash, never per vehicle passing "
+          "through. It says one thing only: these sites injure people more "
+          "often than their crash mix explains."
+    )
 
 
 def render(con, bounds: pd.Series, metrics: pd.Series) -> None:
@@ -68,7 +69,7 @@ def render(con, bounds: pd.Series, metrics: pd.Series) -> None:
         f"tab."
     )
 
-    st.warning(EXPOSURE_CAVEAT)
+    st.warning(exposure_caveat())
 
     st.caption(
         "The crashes tab has the counts and trends behind all of this. "
