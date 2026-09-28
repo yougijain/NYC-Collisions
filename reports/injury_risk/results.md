@@ -33,17 +33,17 @@ Test ROC-AUC lost when each feature is shuffled, 5 repeats.
 
 | Feature | AUC drop | SD |
 |---|---|---|
-| factor_2 | 0.0981 | 0.0007 |
-| vehicle_2 | 0.0918 | 0.0005 |
-| factor_1 | 0.0733 | 0.0011 |
+| factor_2 | 0.0973 | 0.0003 |
+| vehicle_2 | 0.0922 | 0.0007 |
+| factor_1 | 0.0736 | 0.0010 |
 | vehicle_1 | 0.0524 | 0.0004 |
-| road_class | 0.0296 | 0.0005 |
-| borough | 0.0054 | 0.0003 |
-| vehicle_count | 0.0052 | 0.0001 |
-| hour | 0.0050 | 0.0001 |
-| month | 0.0023 | 0.0002 |
-| at_intersection | 0.0013 | 0.0000 |
-| weekday | 0.0003 | 0.0000 |
+| road_class | 0.0295 | 0.0005 |
+| borough | 0.0053 | 0.0002 |
+| hour | 0.0052 | 0.0001 |
+| vehicle_count | 0.0050 | 0.0003 |
+| month | 0.0025 | 0.0002 |
+| at_intersection | 0.0013 | 0.0001 |
+| weekday | 0.0005 | 0.0001 |
 
 ## Calibration
 

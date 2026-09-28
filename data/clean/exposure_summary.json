@@ -15,7 +15,7 @@
     "high": 46
   },
   "median_harmful_per_million": 0.824,
-  "spearman_excess_vs_per_vehicle": 0.27,
+  "spearman_excess_vs_per_vehicle": 0.269,
   "window": {
     "from": "2022-01-01",
     "to": "2026-06-11"

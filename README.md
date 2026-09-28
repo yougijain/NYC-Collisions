@@ -188,17 +188,17 @@ second tab turns it into a list of intersections, ranked by one claim:
 > themselves account for
 
 <!-- generated:watchlist-headline -->
-**1,093 intersections** with at least 25 crashes between 2022-01-01 and 2026-06-11 qualify, over 413,780 scored crashes. The worst sits **27.6 points** above what its crash mix predicts; the top decile sits 13.7 points above. 102 clear z = 1.96, against roughly 27 expected from chance across that many sites. The head of the list is signal. The tail is a screening queue.
+**1,093 intersections** with at least 25 crashes between 2022-01-01 and 2026-06-11 qualify, over 413,780 scored crashes. The worst sits **27.7 points** above what its crash mix predicts; the top decile sits 13.7 points above. 101 clear z = 1.96, against roughly 27 expected from chance across that many sites. The head of the list is signal. The tail is a screening queue.
 <!-- /generated:watchlist-headline -->
 
 <!-- generated:watchlist-examples -->
 | Intersection | Borough | Crashes | Injured | Expected | Excess |
 |---|---|---|---|---|---|
-| 2 Avenue @ East 40 Street | Manhattan | 31 | 87.1% | 57.5% | +27.6 pts |
-| East 161 Street @ Melrose Avenue | Bronx | 53 | 77.4% | 53.3% | +22.1 pts |
-| Cross Bronx Expressway @ Randall Avenue | Bronx | 28 | 71.4% | 42.4% | +27.0 pts |
-| East 149 Street @ Park Avenue | Bronx | 31 | 64.5% | 37.7% | +24.8 pts |
-| Avenue D @ Kings Highway | Brooklyn | 38 | 73.7% | 47.7% | +24.0 pts |
+| 2 Avenue @ East 40 Street | Manhattan | 31 | 87.1% | 57.4% | +27.7 pts |
+| East 161 Street @ Melrose Avenue | Bronx | 53 | 77.4% | 53.3% | +22.0 pts |
+| East 149 Street @ Park Avenue | Bronx | 31 | 64.5% | 37.4% | +25.1 pts |
+| Cross Bronx Expressway @ Randall Avenue | Bronx | 28 | 71.4% | 42.2% | +27.2 pts |
+| Avenue D @ Kings Highway | Brooklyn | 38 | 73.7% | 47.6% | +24.1 pts |
 <!-- /generated:watchlist-examples -->
 
 Three things make that number mean something:
@@ -220,7 +220,7 @@ The same scoring produces the factor table, the part a non-technical
 reader repeats back.
 
 <!-- generated:factor-examples -->
-Crashes where the officer wrote *Lost Consciousness* injure someone 83.4% of the time, against 13.0% for *Oversized Vehicle*. Predicted and observed track within a couple of points across all 31 factors. That agreement is the calibration check worth trusting most.
+Crashes where the officer wrote *Pedestrian/Bicyclist/Other Pedestrian Error/Confusion* injure someone 83.3% of the time, against 13.2% for *Oversized Vehicle*. Predicted and observed track within a couple of points across all 31 factors. That agreement is the calibration check worth trusting most.
 <!-- /generated:factor-examples -->
 
 ```bash
@@ -242,7 +242,7 @@ questions can be put in numbers instead of in a disclaimer.
 <!-- generated:exposure-coverage -->
 NYC DOT's automated traffic counts reach **425 of the 1,075 located sites** (39.5%): a recorder within 150m whose location text names one of the junction's own streets. Those sites see a median 14,314 vehicles a day past the counter, and a median 0.824 crashes that hurt someone per million vehicles.
 
-Ranking them by that rate rather than by crash mix gives a substantially different order — the two agree at a Spearman correlation of **0.27**. That is the distance between the two questions, in a number.
+Ranking them by that rate rather than by crash mix gives a substantially different order — the two agree at a Spearman correlation of **0.269**. That is the distance between the two questions, in a number.
 
 It is also why the watchlist is not re-ranked by it. A recorder sits on one segment rather than across a junction, and 338 of the matched counters cover a single direction, roughly half the traffic on a two-way street; sort by crashes per vehicle and the head of the list is whichever junction has the most under-measured traffic. Counts are a median 10 years old, the oldest from 2007. So every row carries a grade for how much weight it can take — 46 high (the counter names both streets and covers both directions), 190 medium, 189 low — and the ranking stays with the crash-mix residual, which covers every site rather than a third of them.
 <!-- /generated:exposure-coverage -->

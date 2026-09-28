@@ -129,17 +129,17 @@ shuffled:
 <!-- generated:feature-importance -->
 | Feature | AUC drop |
 |---|---|
-| `factor_2` | 0.0981 |
-| `vehicle_2` | 0.0918 |
-| `factor_1` | 0.0733 |
+| `factor_2` | 0.0973 |
+| `vehicle_2` | 0.0922 |
+| `factor_1` | 0.0736 |
 | `vehicle_1` | 0.0524 |
-| `road_class` | 0.0296 |
-| `borough` | 0.0054 |
-| `vehicle_count` | 0.0052 |
-| `hour` | 0.0050 |
-| `month` | 0.0023 |
+| `road_class` | 0.0295 |
+| `borough` | 0.0053 |
+| `hour` | 0.0052 |
+| `vehicle_count` | 0.0050 |
+| `month` | 0.0025 |
 | `at_intersection` | 0.0013 |
-| `weekday` | 0.0003 |
+| `weekday` | 0.0005 |
 <!-- /generated:feature-importance -->
 
 What was hit and why dominates; when and where barely register. The injury
@@ -160,7 +160,7 @@ That converts this limitation from an assertion into a measurement:
 <!-- generated:exposure-coverage -->
 NYC DOT's automated traffic counts reach **425 of the 1,075 located sites** (39.5%): a recorder within 150m whose location text names one of the junction's own streets. Those sites see a median 14,314 vehicles a day past the counter, and a median 0.824 crashes that hurt someone per million vehicles.
 
-Ranking them by that rate rather than by crash mix gives a substantially different order — the two agree at a Spearman correlation of **0.27**. That is the distance between the two questions, in a number.
+Ranking them by that rate rather than by crash mix gives a substantially different order — the two agree at a Spearman correlation of **0.269**. That is the distance between the two questions, in a number.
 
 It is also why the watchlist is not re-ranked by it. A recorder sits on one segment rather than across a junction, and 338 of the matched counters cover a single direction, roughly half the traffic on a two-way street; sort by crashes per vehicle and the head of the list is whichever junction has the most under-measured traffic. Counts are a median 10 years old, the oldest from 2007. So every row carries a grade for how much weight it can take — 46 high (the counter names both streets and covers both directions), 190 medium, 189 low — and the ranking stays with the crash-mix residual, which covers every site rather than a third of them.
 <!-- /generated:exposure-coverage -->
@@ -237,7 +237,7 @@ reader can see the arithmetic. The head of the list is signal; the tail is a
 screening queue, not a verdict.
 
 <!-- generated:watchlist-scope -->
-Keying sites direction-free merges 65,544 apparent intersections into 40,695 real ones. The current build lists 1,093 of them, over 413,780 scored crashes from 2022-01-01 to 2026-06-11, with 102 above z = 1.96 against roughly 27 expected by chance.
+Keying sites direction-free merges 65,544 apparent intersections into 40,695 real ones. The current build lists 1,093 of them, over 413,780 scored crashes from 2022-01-01 to 2026-06-11, with 101 above z = 1.96 against roughly 27 expected by chance.
 <!-- /generated:watchlist-scope -->
 
 Regenerate with `python scripts/build_watchlist.py`.
