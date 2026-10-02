@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 DATASET_FACTS = ROOT / "docs" / "dataset_facts.json"
 MODEL_METRICS = ROOT / "reports" / "injury_risk" / "metrics.json"
 WATCHLIST_SUMMARY = ROOT / "data" / "clean" / "watchlist_summary.json"
+BACKTEST_METRICS = ROOT / "reports" / "backtest" / "metrics.json"
 EXPOSURE_SUMMARY = ROOT / "data" / "clean" / "exposure_summary.json"
 WATCHLIST_CSV = ROOT / "data" / "clean" / "injury_watchlist.csv"
 FACTORS_CSV = ROOT / "data" / "clean" / "injury_risk_factors.csv"
@@ -192,6 +193,40 @@ def watchlist_scope(summary: Dict) -> str:
     )
 
 
+def backtest_finding(metrics: Dict) -> str:
+    """What the backtest found, including the half that does not flatter."""
+    head, naive = metrics["headline"], metrics["naive_headline"]
+    early, late = metrics["early_window"], metrics["late_window"]
+    short = metrics["shortlist"]
+    sweep = [r for r in metrics["sensitivity"] if not r["underpowered"]]
+    wins = sum(1 for r in sweep if r["model_excess"] > r["observed_rate"])
+
+    return (
+        f"Ranked on **{early['from']}–{early['to']}** alone, then checked "
+        f"against **{late['from']}–{late['to']}**, over the "
+        f"{metrics['sites_in_both']:,} sites with at least "
+        f"{metrics['min_window_crashes']} scored crashes in both windows.\n\n"
+        f"**The ranking does predict the future.** Early excess and late "
+        f"excess correlate at a Spearman of **{head['observed']}**, against "
+        f"a permutation null of {head['null_mean']} ± {head['null_sd']} "
+        f"(p = {head['p_value']}). Of the top {short['top_n']} sites, "
+        f"{short['still_above_expectation']:.0%} were still above "
+        f"expectation in the later window against a "
+        f"{short['base_rate']:.0%} base rate, a {short['lift']:.2f}x lift, "
+        f"and they averaged "
+        f"{short['mean_late_excess'] * 100:+.1f} points of excess against "
+        f"{short['mean_late_excess_rest'] * 100:+.1f} for the rest.\n\n"
+        f"**What it does not show is that the model earns its place.** "
+        f"Sorting the same sites by raw injury rate, with no model at all, "
+        f"predicts late excess at **{naive['observed']}** — a tie at this "
+        f"split. Across {len(sweep)} split-and-threshold combinations the "
+        f"crash-mix adjustment beats the naive ordering in {wins} of them "
+        f"and loses in {len(sweep) - wins}, so the comparison is not stable "
+        f"enough to claim either way. Full table in "
+        f"[`reports/backtest/results.md`](reports/backtest/results.md)."
+    )
+
+
 def exposure_coverage(summary: Dict) -> str:
     """How far the traffic counts reach, and what they say about the order."""
     from models.exposure import MATCH_RADIUS_M
@@ -287,6 +322,10 @@ def build_blocks() -> Dict[str, str]:
             blocks["finding-headline"] = finding_headline(facts, summary)
         blocks["watchlist-headline"] = watchlist_headline(summary)
         blocks["watchlist-scope"] = watchlist_scope(summary)
+
+    backtest = _load(BACKTEST_METRICS)
+    if backtest:
+        blocks["backtest-finding"] = backtest_finding(backtest)
 
     exposure = _load(EXPOSURE_SUMMARY)
     if exposure:

@@ -87,6 +87,18 @@ def test_exposure_boroughs_are_spelled_the_way_the_app_filters_them():
     assert set(exposure["borough"]) <= set(sites["borough"])
 
 
+def exposure_limitation(method) -> str:
+    """The method tab's exposure caveat, found by name.
+
+    Indexing into limitations() would break every time another caveat is
+    added ahead of it, which is how this test last failed.
+    """
+    for title, body in method.limitations():
+        if "exposure denominator" in title.lower():
+            return body
+    raise AssertionError("the method tab lists no exposure limitation")
+
+
 def test_no_tab_denies_traffic_counts_while_the_join_has_them():
     """The landing page and the method tab each kept their own copy of the
     watchlist's caveat, and both went on saying "no traffic counts" for a
@@ -98,7 +110,7 @@ def test_no_tab_denies_traffic_counts_while_the_join_has_them():
     exposure, summary = common.exposure_data()
     assert not exposure.empty and summary, "no exposure built to check against"
 
-    claims = [finding.exposure_caveat(), method.limitations()[0][1]]
+    claims = [finding.exposure_caveat(), exposure_limitation(method)]
     for claim in claims:
         assert "no traffic counts" not in claim
         assert f"{summary['matched']:,}" in claim
@@ -110,7 +122,7 @@ def test_every_tab_states_the_same_exposure_coverage():
 
     _, summary = common.exposure_data()
     reach = f"{summary['matched']:,} of the {summary['sites_located']:,}"
-    for claim in (finding.exposure_caveat(), method.limitations()[0][1]):
+    for claim in (finding.exposure_caveat(), exposure_limitation(method)):
         assert reach in claim
 
 

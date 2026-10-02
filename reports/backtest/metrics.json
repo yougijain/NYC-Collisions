@@ -1,0 +1,251 @@
+{
+  "split_year": 2024,
+  "min_window_crashes": 20,
+  "early_window": {
+    "from": 2022,
+    "to": 2023,
+    "sites": 350
+  },
+  "late_window": {
+    "from": 2024,
+    "to": 2026,
+    "sites": 534
+  },
+  "sites_in_both": 247,
+  "predictors": [
+    {
+      "predictor": "model excess",
+      "target": "late excess",
+      "spearman": 0.2574
+    },
+    {
+      "predictor": "model excess, lower 95%",
+      "target": "late excess",
+      "spearman": 0.2572
+    },
+    {
+      "predictor": "observed injury rate",
+      "target": "late excess",
+      "spearman": 0.2616
+    },
+    {
+      "predictor": "crash count",
+      "target": "late excess",
+      "spearman": 0.0513
+    },
+    {
+      "predictor": "model excess",
+      "target": "late injury rate",
+      "spearman": 0.262
+    },
+    {
+      "predictor": "model excess, lower 95%",
+      "target": "late injury rate",
+      "spearman": 0.2406
+    },
+    {
+      "predictor": "observed injury rate",
+      "target": "late injury rate",
+      "spearman": 0.4692
+    },
+    {
+      "predictor": "crash count",
+      "target": "late injury rate",
+      "spearman": -0.0539
+    }
+  ],
+  "headline": {
+    "observed": 0.2574,
+    "null_mean": -0.0008,
+    "null_sd": 0.0644,
+    "null_p95": 0.1037,
+    "p_value": 0.0005,
+    "permutations": 2000
+  },
+  "naive_headline": {
+    "observed": 0.2616,
+    "null_mean": -0.0007,
+    "null_sd": 0.064,
+    "null_p95": 0.104,
+    "p_value": 0.0005,
+    "permutations": 2000
+  },
+  "overlap": {
+    "spearman_excess_vs_observed_rate": 0.7909,
+    "expected_rate_sd": 0.0805,
+    "expected_rate_min": 0.2079,
+    "expected_rate_max": 0.6389,
+    "observed_rate_sd": 0.133
+  },
+  "deciles": [
+    {
+      "decile": 1,
+      "sites": 25,
+      "early_excess": -0.1687,
+      "late_excess": -0.0339,
+      "late_injury_rate": 0.4414
+    },
+    {
+      "decile": 2,
+      "sites": 25,
+      "early_excess": -0.1009,
+      "late_excess": -0.024,
+      "late_injury_rate": 0.4437
+    },
+    {
+      "decile": 3,
+      "sites": 24,
+      "early_excess": -0.0619,
+      "late_excess": 0.0043,
+      "late_injury_rate": 0.4929
+    },
+    {
+      "decile": 4,
+      "sites": 25,
+      "early_excess": -0.0353,
+      "late_excess": 0.0132,
+      "late_injury_rate": 0.4843
+    },
+    {
+      "decile": 5,
+      "sites": 25,
+      "early_excess": -0.0103,
+      "late_excess": 0.0272,
+      "late_injury_rate": 0.5182
+    },
+    {
+      "decile": 6,
+      "sites": 24,
+      "early_excess": 0.0143,
+      "late_excess": 0.0241,
+      "late_injury_rate": 0.5093
+    },
+    {
+      "decile": 7,
+      "sites": 25,
+      "early_excess": 0.0471,
+      "late_excess": -0.0045,
+      "late_injury_rate": 0.4851
+    },
+    {
+      "decile": 8,
+      "sites": 24,
+      "early_excess": 0.0795,
+      "late_excess": 0.0323,
+      "late_injury_rate": 0.5203
+    },
+    {
+      "decile": 9,
+      "sites": 25,
+      "early_excess": 0.1151,
+      "late_excess": 0.0629,
+      "late_injury_rate": 0.5528
+    },
+    {
+      "decile": 10,
+      "sites": 25,
+      "early_excess": 0.1764,
+      "late_excess": 0.0465,
+      "late_injury_rate": 0.5464
+    }
+  ],
+  "shortlist": {
+    "top_n": 50,
+    "still_above_expectation": 0.64,
+    "base_rate": 0.5668,
+    "lift": 1.129,
+    "mean_late_excess": 0.0405,
+    "mean_late_excess_rest": 0.0082
+  },
+  "shrinkage": {
+    "top_n_early_excess": 0.1389,
+    "top_n_late_excess": 0.0405,
+    "retained": 0.291
+  },
+  "sensitivity": [
+    {
+      "split_year": 2023,
+      "min_window_crashes": 15,
+      "sites": 139,
+      "model_excess": 0.2195,
+      "observed_rate": 0.2315,
+      "p_value": 0.00599,
+      "underpowered": false
+    },
+    {
+      "split_year": 2023,
+      "min_window_crashes": 20,
+      "sites": 58,
+      "model_excess": 0.1844,
+      "observed_rate": 0.2112,
+      "p_value": 0.10379,
+      "underpowered": false
+    },
+    {
+      "split_year": 2023,
+      "min_window_crashes": 25,
+      "sites": 27,
+      "underpowered": true
+    },
+    {
+      "split_year": 2024,
+      "min_window_crashes": 15,
+      "sites": 466,
+      "model_excess": 0.2746,
+      "observed_rate": 0.299,
+      "p_value": 0.002,
+      "underpowered": false
+    },
+    {
+      "split_year": 2024,
+      "min_window_crashes": 20,
+      "sites": 247,
+      "model_excess": 0.2574,
+      "observed_rate": 0.2616,
+      "p_value": 0.002,
+      "underpowered": false
+    },
+    {
+      "split_year": 2024,
+      "min_window_crashes": 25,
+      "sites": 133,
+      "model_excess": 0.2738,
+      "observed_rate": 0.3262,
+      "p_value": 0.00599,
+      "underpowered": false
+    },
+    {
+      "split_year": 2025,
+      "min_window_crashes": 15,
+      "sites": 293,
+      "model_excess": 0.2766,
+      "observed_rate": 0.2198,
+      "p_value": 0.002,
+      "underpowered": false
+    },
+    {
+      "split_year": 2025,
+      "min_window_crashes": 20,
+      "sites": 127,
+      "model_excess": 0.2957,
+      "observed_rate": 0.2064,
+      "p_value": 0.002,
+      "underpowered": false
+    },
+    {
+      "split_year": 2025,
+      "min_window_crashes": 25,
+      "sites": 63,
+      "model_excess": 0.2984,
+      "observed_rate": 0.2175,
+      "p_value": 0.00998,
+      "underpowered": false
+    }
+  ],
+  "folds": 5,
+  "dataset": {
+    "name": "collisions.parquet",
+    "dataset_version": 4,
+    "built_at": "2026-09-28T15:36:28.847664+00:00"
+  }
+}
