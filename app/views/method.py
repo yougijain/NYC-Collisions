@@ -15,10 +15,12 @@ import streamlit as st
 
 import db
 import palette
+
 from views.common import exposure_claim, exposure_data
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 METRICS_PATH = ROOT / "reports" / "injury_risk" / "metrics.json"
+BACKTEST_PATH = ROOT / "reports" / "backtest" / "metrics.json"
 CALIBRATION_PLOT = ROOT / "reports" / "injury_risk" / "calibration.png"
 
 BASELINE = "Borough x hour base rate"
@@ -72,6 +74,13 @@ def _metrics() -> Optional[Dict]:
 
 
 
+def _backtest() -> Optional[Dict]:
+    """The backtest report, if one has been built."""
+    if not BACKTEST_PATH.exists():
+        return None
+    return json.loads(BACKTEST_PATH.read_text(encoding="utf-8"))
+
+
 def limitations() -> list:
     """The caveats, with the exposure one measured from the current join.
 
@@ -79,13 +88,34 @@ def limitations() -> list:
     arrived, because it was prose in a constant while the watchlist tab was
     reading the join. Now it is built from the same numbers.
     """
+    rows = []
+    back = _backtest()
+    if back:
+        head, naive = back["headline"], back["naive_headline"]
+        sweep = [r for r in back["sensitivity"] if not r["underpowered"]]
+        wins = sum(1 for r in sweep if r["model_excess"] > r["observed_rate"])
+        rows.append((
+            "The ranking predicts, but the model may not be why",
+            f"Ranked on {back['early_window']['from']}-"
+            f"{back['early_window']['to']} alone and checked against "
+            f"{back['late_window']['from']}-{back['late_window']['to']}, the "
+            f"earlier ranking predicts the later one at a Spearman of "
+            f"{head['observed']:.2f} against a permutation null of "
+            f"{head['null_mean']:.2f} (p = {head['p_value']}). So the list is "
+            f"not noise. What the backtest does not show is that the "
+            f"crash-mix adjustment is what makes it work: sorting the same "
+            f"sites by raw injury rate predicts the same target at "
+            f"{naive['observed']:.2f}, and across {len(sweep)} splits and "
+            f"thresholds the model wins {wins} and loses {len(sweep) - wins}.",
+        ))
+
     exposure, summary = exposure_data()
     covered = (
         "The exposure denominator is partial"
         if not exposure.empty and summary
         else "No exposure denominator"
     )
-    return [(
+    return rows + [(
         covered,
         exposure_claim(exposure, summary)
         + " Every rate the model produces is per crash, never per vehicle "

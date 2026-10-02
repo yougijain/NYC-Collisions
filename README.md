@@ -227,6 +227,31 @@ Crashes where the officer wrote *Lost Consciousness* injure someone 83.4% of the
 python scripts/build_watchlist.py   # rewrites the three committed CSVs
 ```
 
+### Does the ranking actually predict anything?
+
+Every other figure here is measured inside one window. That says the
+scoring is clean; it does not say a site flagged in 2023 was still worth
+flagging in 2025. So `models/backtest.py` splits the window and checks.
+
+<!-- generated:backtest-finding -->
+Ranked on **2022–2023** alone, then checked against **2024–2026**, over the 247 sites with at least 20 scored crashes in both windows.
+
+**The ranking does predict the future.** Early excess and late excess correlate at a Spearman of **0.2574**, against a permutation null of -0.0008 ± 0.0644 (p = 0.0005). Of the top 50 sites, 64% were still above expectation in the later window against a 57% base rate, a 1.13x lift, and they averaged +4.0 points of excess against +0.8 for the rest.
+
+**What it does not show is that the model earns its place.** Sorting the same sites by raw injury rate, with no model at all, predicts late excess at **0.2616** — a tie at this split. Across 8 split-and-threshold combinations the crash-mix adjustment beats the naive ordering in 3 of them and loses in 5, so the comparison is not stable enough to claim either way. Full table in [`reports/backtest/results.md`](reports/backtest/results.md).
+<!-- /generated:backtest-finding -->
+
+The comparison is only fair because the model never sees where a crash
+happened, so a model fit on the early window carries no memory of which
+site is which. Regression to the mean is expected and reported rather than
+hidden: the top 50 sites keep about a third of their excess, which is what
+ranking on a noisy estimate does. The permutation null is what separates
+that from the ranking being noise outright.
+
+```bash
+python scripts/build_backtest.py        # rewrites reports/backtest/
+```
+
 ### What it does not prove
 
 **This is not a ranking of dangerous intersections, and that is now measured
