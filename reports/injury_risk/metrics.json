@@ -2,7 +2,7 @@
   "dataset": {
     "name": "collisions.parquet",
     "dataset_version": 4,
-    "built_at": "2026-09-28T15:36:28.847664+00:00"
+    "built_at": "2026-10-05T16:09:33.617719+00:00"
   },
   "split": {
     "calibration_start": "2024-01-01",
@@ -27,8 +27,8 @@
     }
   },
   "model": {
-    "boosting_rounds": 608,
-    "level_shift": 0.3399,
+    "boosting_rounds": 597,
+    "level_shift": 0.3396,
     "features": [
       "borough",
       "weekday",
@@ -83,7 +83,7 @@
       "roc_auc": 0.7947,
       "brier": 0.1811,
       "log_loss": 0.5374,
-      "mean_predicted": 0.4227,
+      "mean_predicted": 0.4228,
       "observed_rate": 0.4321,
       "brier_skill_vs_baseline": 0.2692
     }
@@ -91,57 +91,57 @@
   "feature_importance": [
     {
       "feature": "factor_2",
-      "auc_drop": 0.0973,
-      "sd": 0.0003
+      "auc_drop": 0.096,
+      "sd": 0.0006
     },
     {
       "feature": "vehicle_2",
-      "auc_drop": 0.0922,
-      "sd": 0.0007
+      "auc_drop": 0.0944,
+      "sd": 0.0002
     },
     {
       "feature": "factor_1",
-      "auc_drop": 0.0736,
-      "sd": 0.001
+      "auc_drop": 0.0732,
+      "sd": 0.0012
     },
     {
       "feature": "vehicle_1",
-      "auc_drop": 0.0524,
-      "sd": 0.0004
-    },
-    {
-      "feature": "road_class",
-      "auc_drop": 0.0295,
+      "auc_drop": 0.0522,
       "sd": 0.0005
     },
     {
-      "feature": "borough",
-      "auc_drop": 0.0053,
-      "sd": 0.0002
-    },
-    {
-      "feature": "hour",
-      "auc_drop": 0.0052,
-      "sd": 0.0001
-    },
-    {
-      "feature": "vehicle_count",
-      "auc_drop": 0.005,
+      "feature": "road_class",
+      "auc_drop": 0.0296,
       "sd": 0.0003
     },
     {
-      "feature": "month",
-      "auc_drop": 0.0025,
+      "feature": "vehicle_count",
+      "auc_drop": 0.0054,
       "sd": 0.0002
     },
     {
-      "feature": "at_intersection",
-      "auc_drop": 0.0013,
+      "feature": "borough",
+      "auc_drop": 0.0052,
+      "sd": 0.0003
+    },
+    {
+      "feature": "hour",
+      "auc_drop": 0.0049,
       "sd": 0.0001
     },
     {
+      "feature": "month",
+      "auc_drop": 0.0023,
+      "sd": 0.0001
+    },
+    {
+      "feature": "at_intersection",
+      "auc_drop": 0.0012,
+      "sd": 0.0
+    },
+    {
       "feature": "weekday",
-      "auc_drop": 0.0005,
+      "auc_drop": 0.0004,
       "sd": 0.0001
     }
   ]
