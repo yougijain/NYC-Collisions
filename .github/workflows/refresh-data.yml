@@ -126,6 +126,7 @@ jobs:
         run: |
           python scripts/train_injury_risk.py
           python scripts/build_watchlist.py
+          python scripts/build_backtest.py
 
       - name: Rebuild the exposure join
         # The watchlist moves every week, so the sites a counter is attached
@@ -156,6 +157,7 @@ jobs:
                   data/clean/injury_exposure.csv \
                   data/clean/exposure_summary.json \
                   reports/injury_risk/ \
+                  reports/backtest/ \
                   docs/img/social-preview.png \
                   README.md \
                   docs/model_card.md

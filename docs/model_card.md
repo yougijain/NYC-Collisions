@@ -148,6 +148,21 @@ is an e-bike, and no amount of knowing the hour gets you that.
 
 ## Limitations
 
+**The ranking persists, but the model may not be why.** A backtest fit on
+2022–2023 and checked against 2024–2026 finds the ranking predicts the
+later window well above chance. It does not establish that the crash-mix
+adjustment beats simply sorting by observed injury rate: across splits and
+thresholds the two trade places. Treat the watchlist as a screening tool
+that works, with an open question about which part of it is doing the work.
+
+<!-- generated:backtest-finding -->
+Ranked on **2022–2023** alone, then checked against **2024–2026**, over the 247 sites with at least 20 scored crashes in both windows.
+
+**The ranking does predict the future.** Early excess and late excess correlate at a Spearman of **0.2574**, against a permutation null of -0.0008 ± 0.0644 (p = 0.0005). Of the top 50 sites, 64% were still above expectation in the later window against a 57% base rate, a 1.13x lift, and they averaged +4.0 points of excess against +0.8 for the rest.
+
+**What it does not show is that the model earns its place.** Sorting the same sites by raw injury rate, with no model at all, predicts late excess at **0.2616** — a tie at this split. Across 8 split-and-threshold combinations the crash-mix adjustment beats the naive ordering in 3 of them and loses in 5, so the comparison is not stable enough to claim either way. Full table in [`reports/backtest/results.md`](reports/backtest/results.md).
+<!-- /generated:backtest-finding -->
+
 **The exposure denominator is partial.** This is the big one. Every rate the
 model produces is per *crash*: of the crashes here, how many hurt somebody,
 because the collision data says nothing about how many vehicles passed
