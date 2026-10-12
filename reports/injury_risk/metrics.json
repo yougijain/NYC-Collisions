@@ -2,7 +2,7 @@
   "dataset": {
     "name": "collisions.parquet",
     "dataset_version": 4,
-    "built_at": "2026-10-05T16:09:33.617719+00:00"
+    "built_at": "2026-10-12T16:48:08.355601+00:00"
   },
   "split": {
     "calibration_start": "2024-01-01",
@@ -27,8 +27,8 @@
     }
   },
   "model": {
-    "boosting_rounds": 597,
-    "level_shift": 0.3396,
+    "boosting_rounds": 367,
+    "level_shift": 0.3386,
     "features": [
       "borough",
       "weekday",
@@ -72,18 +72,18 @@
       "observed_rate": 0.4321
     },
     "Gradient boosting (uncalibrated)": {
-      "roc_auc": 0.7947,
-      "brier": 0.1861,
-      "log_loss": 0.5504,
-      "mean_predicted": 0.3655,
+      "roc_auc": 0.7944,
+      "brier": 0.1863,
+      "log_loss": 0.5505,
+      "mean_predicted": 0.365,
       "observed_rate": 0.4321,
-      "brier_skill_vs_baseline": 0.249
+      "brier_skill_vs_baseline": 0.2482
     },
     "Gradient boosting": {
-      "roc_auc": 0.7947,
+      "roc_auc": 0.7944,
       "brier": 0.1811,
       "log_loss": 0.5374,
-      "mean_predicted": 0.4228,
+      "mean_predicted": 0.4224,
       "observed_rate": 0.4321,
       "brier_skill_vs_baseline": 0.2692
     }
@@ -91,48 +91,48 @@
   "feature_importance": [
     {
       "feature": "factor_2",
-      "auc_drop": 0.096,
-      "sd": 0.0006
+      "auc_drop": 0.0975,
+      "sd": 0.0004
     },
     {
       "feature": "vehicle_2",
-      "auc_drop": 0.0944,
-      "sd": 0.0002
+      "auc_drop": 0.0908,
+      "sd": 0.0009
     },
     {
       "feature": "factor_1",
-      "auc_drop": 0.0732,
-      "sd": 0.0012
+      "auc_drop": 0.073,
+      "sd": 0.0013
     },
     {
       "feature": "vehicle_1",
-      "auc_drop": 0.0522,
-      "sd": 0.0005
-    },
-    {
-      "feature": "road_class",
-      "auc_drop": 0.0296,
+      "auc_drop": 0.0525,
       "sd": 0.0003
     },
     {
-      "feature": "vehicle_count",
-      "auc_drop": 0.0054,
-      "sd": 0.0002
+      "feature": "road_class",
+      "auc_drop": 0.0297,
+      "sd": 0.0004
     },
     {
-      "feature": "borough",
+      "feature": "vehicle_count",
       "auc_drop": 0.0052,
       "sd": 0.0003
     },
     {
+      "feature": "borough",
+      "auc_drop": 0.005,
+      "sd": 0.0002
+    },
+    {
       "feature": "hour",
-      "auc_drop": 0.0049,
+      "auc_drop": 0.0045,
       "sd": 0.0001
     },
     {
       "feature": "month",
-      "auc_drop": 0.0023,
-      "sd": 0.0001
+      "auc_drop": 0.0025,
+      "sd": 0.0002
     },
     {
       "feature": "at_intersection",
@@ -141,7 +141,7 @@
     },
     {
       "feature": "weekday",
-      "auc_drop": 0.0004,
+      "auc_drop": 0.0003,
       "sd": 0.0001
     }
   ]
