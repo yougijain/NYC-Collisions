@@ -12,54 +12,54 @@
       "train_rows": 112918,
       "calibration_year": 2021,
       "scored_rows": 103887,
-      "boosting_rounds": 158,
-      "level_shift": 0.208
+      "boosting_rounds": 191,
+      "level_shift": 0.2069
     },
     {
       "scored_year": 2023,
       "train_rows": 223476,
       "calibration_year": 2022,
       "scored_rows": 96607,
-      "boosting_rounds": 301,
-      "level_shift": 0.2184
+      "boosting_rounds": 181,
+      "level_shift": 0.2175
     },
     {
       "scored_year": 2024,
       "train_rows": 327363,
       "calibration_year": 2023,
       "scored_rows": 91316,
-      "boosting_rounds": 301,
-      "level_shift": 0.3059
+      "boosting_rounds": 276,
+      "level_shift": 0.3065
     },
     {
       "scored_year": 2025,
       "train_rows": 423970,
       "calibration_year": 2024,
       "scored_rows": 85546,
-      "boosting_rounds": 447,
-      "level_shift": 0.3372
+      "boosting_rounds": 464,
+      "level_shift": 0.3373
     },
     {
       "scored_year": 2026,
       "train_rows": 515286,
       "calibration_year": 2025,
       "scored_rows": 36424,
-      "boosting_rounds": 399,
-      "level_shift": 0.277
+      "boosting_rounds": 415,
+      "level_shift": 0.2769
     }
   ],
   "sites": 1093,
   "scored_crashes": 413780,
   "crashes_at_listed_sites": 44005,
   "worst_site": "2 AVENUE @ EAST 40 STREET",
-  "worst_excess": 0.2728,
-  "median_excess": 0.0138,
-  "top_decile_excess": 0.1353,
-  "sites_above_z_95": 102,
+  "worst_excess": 0.2777,
+  "median_excess": 0.0139,
+  "top_decile_excess": 0.1364,
+  "sites_above_z_95": 101,
   "sites_above_z_95_by_chance": 27.3,
   "dataset": {
     "name": "collisions.parquet",
     "dataset_version": 4,
-    "built_at": "2026-10-12T16:48:08.355601+00:00"
+    "built_at": "2026-10-19T14:45:02.291342+00:00"
   }
 }
