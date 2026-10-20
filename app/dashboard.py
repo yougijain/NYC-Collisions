@@ -17,7 +17,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from views import crashes, finding, method, watchlist  # noqa: E402
-from views.common import connection, filter_control, query  # noqa: E402
+from views.common import connection, filter_control, freshness_banner, query  # noqa: E402
 
 st.set_page_config(
     page_title="NYC crash injury risk",
@@ -55,6 +55,8 @@ def main():
     bounds = query(con, "00_bounds.sql").iloc[0]
     params, boroughs = filter_control(bounds)
     metrics = query(con, "01_metrics.sql", params).iloc[0]
+
+    freshness_banner()
 
     style = basemap()
     tabs = st.tabs(["The finding", "The crashes", "Watchlist", "How it works"])

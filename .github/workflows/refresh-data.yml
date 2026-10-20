@@ -103,6 +103,17 @@ jobs:
           python scripts/dataset_facts.py
           python scripts/data_quality_report.py
 
+      - name: Check whether the source is still publishing
+        # Never fails the run. A quiet upstream is not a broken pipeline,
+        # and a workflow that goes red for something nobody can fix trains
+        # everyone to ignore red. The record it writes drives the banner on
+        # the dashboard, and the job summary carries it here.
+        continue-on-error: true
+        env:
+          NYC_COLLISIONS_DATA: ${{ env.ASSET }}
+          SOCRATA_APP_TOKEN: ${{ secrets.SOCRATA_APP_TOKEN }}
+        run: python scripts/check_freshness.py
+
       - name: Fetch the traffic counts
         # Published by .github/workflows/traffic-volume.yml, which runs on
         # demand because DOT republishes in occasional batches. If it has
@@ -150,6 +161,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/dataset_facts.json \
                   docs/dataset_facts.md \
+                  docs/source_freshness.json \
                   data/clean/data_quality_report.txt \
                   data/clean/injury_watchlist.csv \
                   data/clean/injury_risk_factors.csv \
