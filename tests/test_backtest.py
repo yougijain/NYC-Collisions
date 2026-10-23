@@ -150,6 +150,58 @@ def test_both_predictors_are_scored_against_the_same_target():
     assert {r["predictor"] for r in rows} >= {"model excess", "observed injury rate"}
 
 
+def test_the_naive_ordering_is_pooled_too():
+    """Pooling helps any noisy ranking. If only the model were pooled, a
+    win would show pooling beats not pooling, which is already known."""
+    df = synthetic()
+    out = B.run(df, flat_scores(df), 2024, min_crashes=LOW_BAR, permutations=100)
+
+    late = {r["predictor"] for r in out["predictors"] if r["target"] == "late excess"}
+    assert {"model excess, pooled", "observed injury rate, pooled"} <= late
+    assert {"pooled_headline", "pooled_naive_headline"} <= set(out)
+
+
+def test_pooled_rates_sit_between_each_site_and_the_overall_rate():
+    sites = pd.DataFrame({
+        "observed_rate": [0.2, 0.5, 0.8, 0.45],
+        "crashes": [30, 300, 30, 100],
+    })
+    pooled = B.pooled_rate(sites)
+    overall = np.average(sites["observed_rate"], weights=sites["crashes"])
+
+    lo = np.minimum(sites["observed_rate"], overall)
+    hi = np.maximum(sites["observed_rate"], overall)
+    assert ((pooled >= lo - 1e-9) & (pooled <= hi + 1e-9)).all()
+
+
+def test_identical_seeds_show_no_spread():
+    """The spread is the seed's doing and nothing else's: the same scores
+    twice must come back with none."""
+    df = synthetic()
+    scores = flat_scores(df)
+    out = B.seed_spread(df, [scores, scores], 2024, min_crashes=LOW_BAR)
+
+    assert out["seeds"] == 2
+    # Every site has the same crash count here, so that one is undefined.
+    assert out["predictors"]["crash count"]["sd"] is None
+    assert all(
+        p["sd"] == 0 for name, p in out["predictors"].items() if name != "crash count"
+    )
+    assert all(c["wins"] == 0 for c in out["comparisons"].values())
+
+
+def test_seed_differences_are_taken_within_a_seed(crashes):
+    """Each comparison subtracts two predictors scored under the same seed,
+    never across seeds, or the model's own variance would swamp it."""
+    seeds = [W.rolling_scores(crashes, random_state=s, **FAST)[0] for s in (0, 1)]
+    out = B.seed_spread(crashes, seeds, 2024, min_crashes=LOW_BAR)
+
+    pooled = out["predictors"]["model excess, pooled"]
+    raw = out["predictors"]["model excess"]
+    diff = out["comparisons"]["pooling, model"]
+    assert diff["mean"] == pytest.approx(pooled["mean"] - raw["mean"], abs=2e-4)
+
+
 def test_the_overlap_between_predictors_is_reported():
     """If predicted rates never varied, excess would be observed rate minus
     a constant and the comparison would answer nothing. The reader needs to

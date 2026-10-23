@@ -31,6 +31,14 @@ adjustment cannot beat that, it is decoration on a sort.
 
 Both are handled by comparing predictors against the same target, and by a
 permutation null that breaks the site-to-score link.
+
+## Pooling, and the model's own noise
+
+Each ordering is also compared after partial pooling (models/shrinkage.py),
+and the naive one is pooled too, so pooling and the model are credited
+separately. And every comparison is rerun under several model seeds:
+the early-stopping holdout alone moves these correlations by a few
+thousandths, and two orderings that differ by less than that do not differ.
 """
 
 from typing import Dict, List, Optional
@@ -38,6 +46,7 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
+from models import shrinkage as SH
 from models import watchlist as W
 
 # Sites need enough crashes in *both* windows to be comparable, which is a
@@ -52,6 +61,16 @@ SEED = 20260101
 
 # How many sites a person would actually be sent to look at.
 TOP_N = 50
+
+# Every ordering the backtest compares, as (label, early-window column).
+PREDICTORS = (
+    ("model excess", "excess_early"),
+    ("model excess, pooled", "excess_shrunk_early"),
+    ("model excess, lower 95%", "excess_lower_95_early"),
+    ("observed injury rate", "observed_rate_early"),
+    ("observed injury rate, pooled", "observed_rate_shrunk_early"),
+    ("crash count", "crashes_early"),
+)
 
 
 def windows(
@@ -87,7 +106,24 @@ def windows(
                 f"no site has {min_crashes} scored crashes in the {name} "
                 f"window; lower min_crashes or move the split"
             )
+        ranked[name]["observed_rate_shrunk"] = pooled_rate(ranked[name])
     return ranked
+
+
+def pooled_rate(sites: pd.DataFrame) -> pd.Series:
+    """Raw injury rates, partially pooled the same way the excess is.
+
+    The naive baseline gets the same treatment as the model, or a win for
+    the pooled model would only show that pooling beats not pooling. Its
+    sampling variance is the binomial one at the window's overall rate:
+    the baseline knows nothing about the crash mix, so it cannot use the
+    model's per-crash probabilities either.
+    """
+    if len(sites) < 2:
+        return sites["observed_rate"].copy()
+    overall = float(np.average(sites["observed_rate"], weights=sites["crashes"]))
+    variance = overall * (1 - overall) / sites["crashes"]
+    return SH.shrink(sites["observed_rate"], variance)["shrunk"]
 
 
 def paired(early: pd.DataFrame, late: pd.DataFrame) -> pd.DataFrame:
@@ -134,22 +170,18 @@ def _null(
 def predictors(pair: pd.DataFrame) -> List[Dict]:
     """Rank each candidate ordering by how well it predicts the late window.
 
-    Four orderings, two targets. The comparison that decides whether the
+    Six orderings, two targets. The comparison that decides whether the
     model earns its place is `excess` against `observed_rate`, both
     predicting late excess: same target, same sites, one uses the crash-mix
-    adjustment and the other does not.
+    adjustment and the other does not. Each comes pooled and unpooled, so
+    the effect of pooling and the effect of the model can be read apart.
     """
     rows = []
     for target_name, target in (
         ("late excess", pair["excess_late"]),
         ("late injury rate", pair["observed_rate_late"]),
     ):
-        for label, column in (
-            ("model excess", "excess_early"),
-            ("model excess, lower 95%", "excess_lower_95_early"),
-            ("observed injury rate", "observed_rate_early"),
-            ("crash count", "crashes_early"),
-        ):
+        for label, column in PREDICTORS:
             rows.append({
                 "predictor": label,
                 "target": target_name,
@@ -178,14 +210,16 @@ def deciles(pair: pd.DataFrame, bins: int = 10) -> List[Dict]:
     return out
 
 
-def shortlist(pair: pd.DataFrame, top_n: int = TOP_N) -> Dict:
+def shortlist(
+    pair: pd.DataFrame, top_n: int = TOP_N, by: str = "excess_lower_95_early"
+) -> Dict:
     """What a person sent to the top of the early list would have found.
 
     Precision against the base rate, which is the form the question takes
     in practice: of the sites worth visiting, how many were still worth it?
     """
     top_n = min(top_n, len(pair))
-    ordered = pair.sort_values("excess_lower_95_early", ascending=False)
+    ordered = pair.sort_values(by, ascending=False)
     top = ordered.head(top_n)
 
     base = float((pair["excess_late"] > 0).mean())
@@ -217,6 +251,103 @@ def shrinkage(pair: pd.DataFrame, top_n: int = TOP_N) -> Dict:
         "top_n_early_excess": round(early, 4),
         "top_n_late_excess": round(late, 4),
         "retained": round(late / early, 3) if early else None,
+    }
+
+
+def pooled_fade(pair: pd.DataFrame, top_n: int = TOP_N) -> Dict:
+    """Whether pooling already priced in the fade.
+
+    The raw excess of the top sites keeps under a third of itself in the
+    later window. A pooled estimate is meant to be the expected value, so
+    if the pooling is calibrated the top sites' late excess should land
+    near their pooled early excess rather than far below it. Retention
+    well under one says the pooling was not hard enough.
+    """
+    top = pair.sort_values("excess_shrunk_early", ascending=False).head(
+        min(top_n, len(pair))
+    )
+    early = float(top["excess_shrunk_early"].mean())
+    late = float(top["excess_late"].mean())
+    return {
+        "top_n_pooled_early_excess": round(early, 4),
+        "top_n_late_excess": round(late, 4),
+        "retained": round(late / early, 3) if early else None,
+    }
+
+
+def pooling(early: pd.DataFrame) -> Dict:
+    """How hard the early window's pooling pulled, for the report."""
+    if len(early) < 2:
+        return {}
+    standard_error = (early["excess"] - early["excess_lower_95"]) / W.Z_95
+    return SH.describe(early["excess"], standard_error ** 2)
+
+
+# The comparisons the seed spread reports differences for, as
+# (name, predictor, against). The first is whether pooling helps the model;
+# the other two are whether the model beats the naive ordering, each
+# compared like for like.
+COMPARISONS = (
+    ("pooling, model", "model excess, pooled", "model excess"),
+    ("model vs naive, pooled", "model excess, pooled", "observed injury rate, pooled"),
+    ("model vs naive, raw", "model excess", "observed injury rate"),
+)
+
+
+def seed_spread(
+    df: pd.DataFrame,
+    score_sets: List[pd.DataFrame],
+    split_year: int,
+    min_crashes: int = MIN_WINDOW_CRASHES,
+) -> Dict:
+    """How much the headline moves when nothing changes but the model's seed.
+
+    The early-stopping holdout is a random tenth of each training fold, and
+    which tenth it is decides how many rounds the model runs. Swapping it
+    for another equally valid tenth moved two of the watchlist's top ten.
+    A difference between two orderings smaller than this is not one.
+
+    Args:
+        df: Cleaned collision records.
+        score_sets: `rolling_scores` output under different seeds.
+        split_year: First year of the later window.
+        min_crashes: Minimum scored crashes per site, per window.
+
+    Returns:
+        Per predictor, its correlation with late excess under each seed and
+        their spread; per comparison, the same for the difference.
+    """
+    per_seed = []
+    for scores in score_sets:
+        ranked = windows(df, scores, split_year, min_crashes)
+        pair = paired(ranked["early"], ranked["late"])
+        per_seed.append({
+            label: _spearman(pair[column], pair["excess_late"])
+            for label, column in PREDICTORS
+        })
+    table = pd.DataFrame(per_seed)
+
+    def spread(values: pd.Series) -> Dict:
+        # A constant predictor has no correlation, and NaN is not JSON.
+        if values.isna().any():
+            return {"mean": None, "sd": None, "min": None, "max": None}
+        return {
+            "mean": round(float(values.mean()), 4),
+            "sd": round(float(values.std(ddof=1)), 4) if len(values) > 1 else None,
+            "min": round(float(values.min()), 4),
+            "max": round(float(values.max()), 4),
+        }
+
+    return {
+        "seeds": len(score_sets),
+        "predictors": {label: spread(table[label]) for label, _ in PREDICTORS},
+        "comparisons": {
+            name: {
+                **spread(table[a] - table[b]),
+                "wins": int((table[a] > table[b]).sum()),
+            }
+            for name, a, b in COMPARISONS
+        },
     }
 
 
@@ -265,6 +396,10 @@ def sensitivity(
                     _spearman(pair["excess_early"], pair["excess_late"]), 4),
                 "observed_rate": round(
                     _spearman(pair["observed_rate_early"], pair["excess_late"]), 4),
+                "model_excess_pooled": round(
+                    _spearman(pair["excess_shrunk_early"], pair["excess_late"]), 4),
+                "observed_rate_pooled": round(
+                    _spearman(pair["observed_rate_shrunk_early"], pair["excess_late"]), 4),
                 "p_value": _null(
                     pair["excess_early"], pair["excess_late"], permutations
                 )["p_value"],
@@ -339,9 +474,18 @@ def run(
         "naive_headline": _null(
             pair["observed_rate_early"], pair["excess_late"], permutations
         ),
+        "pooled_headline": _null(
+            pair["excess_shrunk_early"], pair["excess_late"], permutations
+        ),
+        "pooled_naive_headline": _null(
+            pair["observed_rate_shrunk_early"], pair["excess_late"], permutations
+        ),
+        "pooling": pooling(ranked["early"]),
         "overlap": overlap(pair),
         "deciles": deciles(pair),
         "shortlist": shortlist(pair),
+        "pooled_shortlist": shortlist(pair, by="excess_shrunk_early"),
         "shrinkage": shrinkage(pair),
+        "pooled_fade": pooled_fade(pair),
         "sensitivity": sensitivity(df, scores),
     }
