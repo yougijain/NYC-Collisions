@@ -57,6 +57,22 @@
   "top_decile_excess": 0.1364,
   "sites_above_z_95": 101,
   "sites_above_z_95_by_chance": 27.3,
+  "false_discovery": {
+    "sites": 1093,
+    "q": 0.05,
+    "above_z_95": 101,
+    "above_z_95_by_chance": 27.3,
+    "below_z_95": 68,
+    "excess_over_chance": 73.7,
+    "survivors": 2,
+    "survivors_bonferroni": 1,
+    "smallest_p": 3.492477267074227e-05,
+    "largest_z": 3.98,
+    "survivor_sites": [
+      "2 AVENUE @ EAST 40 STREET",
+      "EAST 161 STREET @ MELROSE AVENUE"
+    ]
+  },
   "dataset": {
     "name": "collisions.parquet",
     "dataset_version": 4,

@@ -1,11 +1,13 @@
 """The watchlist tab: intersections whose crashes injure more than they should."""
 
+import numpy as np
 import pandas as pd
 import pydeck as pdk
 import altair as alt
 import streamlit as st
 
 import palette
+from models import significance as sig
 from views.common import exposure_claim, exposure_data, watchlist_data
 
 # Enough of the watchlist to see on a map without it becoming a blur.
@@ -59,6 +61,142 @@ def _map(sites: pd.DataFrame, basemap) -> None:
             },
         )
     )
+
+
+def funnel_chart(sites: pd.DataFrame, survivors: set) -> alt.LayerChart:
+    """Build the p-chart. Separated from the tab so it can be rendered alone.
+
+    The band is drawn at the average expected rate rather than each site's
+    own, which a strict reading of the control limits would require. The
+    approximation is tight here: sqrt(p(1-p)) moves by under 5% across the
+    middle 90% of sites, and the z-scores the ranking and the correction
+    both rest on use each site's own rate regardless.
+    """
+    plotted = sites.copy()
+    plotted["Excess (pts)"] = plotted["excess"] * 100
+    plotted["Standing"] = np.where(
+        plotted["site"].isin(survivors),
+        "Survives correction",
+        "Within the noise a site this size makes",
+    )
+
+    reference = float(plotted["expected_rate"].mean())
+    limits = sig.funnel_limits(plotted["crashes"], reference)
+    span = [plotted["crashes"].min() * 0.9, plotted["crashes"].max() * 1.1]
+    scale = alt.Scale(type="log", domain=span, nice=False)
+    bands = pd.concat([
+        pd.DataFrame({"crashes": limits["crashes"],
+                      "value": limits[column] * 100,
+                      "edge": column})
+        for column in ("outer_upper", "outer_lower",
+                       "inner_upper", "inner_lower")
+    ])
+
+    rules = (
+        alt.Chart(bands)
+        .mark_line(strokeDash=[5, 4], color=palette.INK_MUTED, strokeWidth=1.5,
+                   opacity=0.8)
+        .encode(
+            x=alt.X("crashes:Q", title="Crashes at the site", scale=scale),
+            y=alt.Y("value:Q", title="Excess (percentage points)"),
+            detail="edge:N",
+        )
+    )
+    dots = (
+        alt.Chart(plotted)
+        .mark_circle(opacity=0.5, stroke=palette.SURFACE, strokeWidth=0.6)
+        .encode(
+            x=alt.X("crashes:Q", scale=scale),
+            y=alt.Y("Excess (pts):Q"),
+            color=alt.Color(
+                "Standing:N",
+                scale=alt.Scale(
+                    domain=["Within the noise a site this size makes",
+                            "Survives correction"],
+                    range=[palette.SERIES, palette.FLAGGED],
+                ),
+                legend=alt.Legend(title=None, orient="top", labelLimit=320),
+            ),
+            size=alt.Size("Standing:N", scale=alt.Scale(
+                domain=["Within the noise a site this size makes",
+                        "Survives correction"], range=[30, 170]), legend=None),
+            tooltip=[
+                alt.Tooltip("site:N", title="Intersection"),
+                alt.Tooltip("crashes:Q", title="Crashes", format=","),
+                alt.Tooltip("observed_rate:Q", title="Injured", format=".1%"),
+                alt.Tooltip("expected_rate:Q", title="Expected", format=".1%"),
+                alt.Tooltip("excess_z:Q", title="z", format=".2f"),
+                alt.Tooltip("Standing:N", title="Standing"),
+            ],
+        )
+    )
+    return (rules + dots).properties(height=440)
+
+
+def _funnel(sites: pd.DataFrame, summary: dict) -> None:
+    """Plot every site against the precision its crash count buys it.
+
+    A p-chart with varying sample size. The band narrows as 1/sqrt(n),
+    which is the argument the z-scores make in a column of numbers and
+    this makes in a glance: a junction with 25 crashes has to sit far
+    from expectation before it means anything, and one with 200 does not.
+
+    The two readings of the same evidence are both on the chart. Sites
+    outside the outer band are what the eye screens for; the handful that
+    survive a false-discovery correction across all of them are marked
+    separately, because those are the only ones defensible on their own.
+    """
+    if sites.empty:
+        return
+    found = (summary or {}).get("false_discovery") or {}
+
+    st.subheader("How much of this is sample size")
+    st.caption(
+        f"All {len(sites):,} intersections, so the filters above do not "
+        f"apply here. Each dot is one of them. The curves are what random "
+        f"variation alone produces at that many crashes, so a dot inside "
+        f"them is an ordinary junction having an unlucky stretch. They are "
+        f"drawn at the average expected rate; each dot's own rate sets its "
+        f"z-score, and the two differ by under a twentieth across the "
+        f"middle 90% of sites."
+    )
+    st.altair_chart(
+        funnel_chart(sites, set(found.get("survivor_sites") or [])),
+        use_container_width=True,
+    )
+    _significance_note(found)
+
+
+def _significance_note(found: dict) -> None:
+    """Say what the chart shows and what it refuses to show."""
+    if not found:
+        return
+    with st.expander("Why so few sites are marked"):
+        st.markdown(
+            f"Two readings of the same evidence, and they disagree sharply.\n\n"
+            f"**As a list**, it clearly holds more than chance: "
+            f"{found['above_z_95']} sites clear z = 1.96 where chance alone "
+            f"would produce about {found['above_z_95_by_chance']:.0f} across "
+            f"{found['sites']:,} of them, an excess of roughly "
+            f"{found['excess_over_chance']:.0f}. The backtest agrees "
+            f"independently: the ranking predicts a later window well above "
+            f"chance.\n\n"
+            f"**As individual junctions**, almost none stand up. Testing "
+            f"{found['sites']:,} sites at once means expecting dozens of "
+            f"false positives, and at a {found['q']:.0%} false discovery "
+            f"rate only **{found['survivors']}** survive "
+            f"(Bonferroni: {found['survivors_bonferroni']}). The largest z "
+            f"anywhere on the list is {found['largest_z']}.\n\n"
+            f"Neither number is the honest one on its own. The list is worth "
+            f"working through; a single site on it is a lead rather than a "
+            f"finding, and that is what a screening tool is.\n\n"
+            f"The test runs one-sided, so the {found['below_z_95']} sites "
+            f"below the lower curve -- junctions whose crashes injure people "
+            f"*less* often than their mix predicts -- are not marked. They "
+            f"are the check on the ones above: if the upper tail were just "
+            f"the model's residuals being wider than the formula assumes, "
+            f"the lower tail would be the same size."
+        )
 
 
 def _exposure_section(boroughs: list[str]) -> None:
@@ -208,7 +346,7 @@ def render(boroughs: list[str], basemap) -> None:
         "the road type, the hour. Never from where it happened. A site's "
         "**excess** is how much more often its crashes actually injured "
         "someone than that mix accounts for. Sites are ordered by the "
-        "conservative end of that estimate, so a site with 400 crashes is not "
+        "conservative end of that estimate, so a site with 200 crashes is not "
         "outranked by one with 25 and a lucky run."
     )
 
@@ -282,6 +420,9 @@ def render(boroughs: list[str], basemap) -> None:
 
     st.subheader(f"Worst {min(WATCHLIST_MAP_SITES, len(shown))} on the map")
     _map(shown, basemap)
+
+    st.divider()
+    _funnel(sites, summary)
 
     _exposure_section(boroughs)
 

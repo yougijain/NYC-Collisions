@@ -220,3 +220,58 @@ def test_hex_to_rgba_round_trips():
     assert palette.rgba("2a78d6", 128) == [42, 120, 214, 128]
     with pytest.raises(ValueError):
         palette.rgba("#fff")
+
+
+def _sample_sites():
+    import pandas as pd
+
+    return pd.DataFrame({
+        "site": [f"A @ {i}" for i in range(6)],
+        "crashes": [25, 30, 40, 60, 120, 220],
+        "excess": [0.28, -0.05, 0.10, 0.02, -0.08, 0.01],
+        "expected_rate": [0.47] * 6,
+        "observed_rate": [0.75, 0.42, 0.57, 0.49, 0.39, 0.48],
+        "excess_z": [3.9, -0.6, 1.3, 0.4, -1.7, 0.2],
+    })
+
+
+def test_the_funnel_keeps_its_four_edges_apart():
+    """Each control limit is its own line.
+
+    Grouping the upper and lower edge of a band under one key makes Vega
+    join them at every x, which draws a hatched box instead of a funnel.
+    The chart still renders, so only this catches it.
+    """
+    from views.watchlist import funnel_chart
+
+    chart = funnel_chart(_sample_sites(), set())
+    bands = chart.layer[0].data
+
+    assert set(bands["edge"]) == {
+        "inner_upper", "inner_lower", "outer_upper", "outer_lower"
+    }
+    for _, edge in bands.groupby("edge"):
+        assert edge["crashes"].is_monotonic_increasing
+
+
+def test_the_funnel_bands_narrow_with_crash_count():
+    """The whole point of the plot: precision bought by sample size."""
+    from views.watchlist import funnel_chart
+
+    bands = funnel_chart(_sample_sites(), set()).layer[0].data
+    upper = bands[bands["edge"] == "outer_upper"].sort_values("crashes")
+
+    assert upper["value"].is_monotonic_decreasing
+    assert upper["value"].iloc[0] > 2 * upper["value"].iloc[-1]
+
+
+def test_the_funnel_marks_only_the_sites_that_survive_correction():
+    from views.watchlist import funnel_chart
+
+    sites = _sample_sites()
+    chart = funnel_chart(sites, {"A @ 0"})
+    plotted = chart.layer[1].data
+
+    assert len(plotted) == len(sites)
+    marked = plotted[plotted["Standing"] == "Survives correction"]
+    assert list(marked["site"]) == ["A @ 0"]

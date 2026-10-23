@@ -222,8 +222,23 @@ Three things make that number mean something:
   year is scored by a model trained on everything before the previous year
   and calibrated on the previous one.
 - **The ranking is by a lower bound, not the estimate.** A site with 25
-  crashes and a 30-point excess is a weaker finding than one with 400 crashes
+  crashes and a 30-point excess is a weaker finding than one with 200 crashes
   and 15, and the ordering says so.
+
+### What the list establishes, and what it does not
+
+<!-- generated:false-discovery -->
+Testing 1,093 intersections at once, 101 clear z = 1.96 where chance alone would produce about 27 -- an excess of roughly 74 sites. That is the argument for the list.
+
+It is not an argument for any single entry on it. Under Benjamini-Hochberg at q = 0.05, **2 of 1,093 survive** (Bonferroni: 1); the largest z anywhere is 3.98, smallest p 3.5e-05. So the ranking is a screening queue whose head is worth a site visit, not a list of 101 established hazards.
+
+The lower tail says the same thing from the other side. 68 sites sit more than 1.96 standard errors *below* expectation, also against about 27 by chance, so site-level variation is real in both directions and the upper tail is the larger half of it, not the whole story. The test is one-sided because the question is which junctions are worse than their crashes explain; the count below is what keeps that from being mistaken for a claim that the city is uniformly safe elsewhere.
+<!-- /generated:false-discovery -->
+
+The dashboard draws this as a funnel plot: crash count against excess, with
+control limits at 1.96 and 3.09 standard errors. The band narrows as
+1/sqrt(n), which is the same argument the lower-bound ranking makes, in a
+form you can check at a glance.
 
 The same scoring produces the factor table, the part a non-technical
 reader repeats back.

@@ -302,6 +302,41 @@ def watchlist_examples(sites) -> str:
     )
 
 
+def false_discovery(summary: Dict) -> str:
+    """The same evidence read per site rather than per list.
+
+    Both numbers belong in the documents. Publishing only the aggregate
+    overstates what any one intersection has established; publishing only
+    the corrected count hides that the list as a whole plainly holds more
+    than chance, which the backtest confirms independently.
+    """
+    found = summary["false_discovery"]
+    return (
+        f"Testing {found['sites']:,} intersections at once, "
+        f"{found['above_z_95']} clear z = 1.96 where chance alone would "
+        f"produce about {found['above_z_95_by_chance']:.0f} -- an excess of "
+        f"roughly {found['excess_over_chance']:.0f} sites. That is the "
+        f"argument for the list.\n\n"
+        f"It is not an argument for any single entry on it. Under "
+        f"Benjamini-Hochberg at q = {found['q']:.2f}, "
+        f"**{found['survivors']} of {found['sites']:,} survive** "
+        f"(Bonferroni: {found['survivors_bonferroni']}); the largest z "
+        f"anywhere is {found['largest_z']}, smallest p "
+        f"{found['smallest_p']:.1e}. So the ranking is a screening queue "
+        f"whose head is worth a site visit, not a list of "
+        f"{found['above_z_95']} established hazards.\n\n"
+        f"The lower tail says the same thing from the other side. "
+        f"{found['below_z_95']} sites sit more than 1.96 standard errors "
+        f"*below* expectation, also against about "
+        f"{found['above_z_95_by_chance']:.0f} by chance, so site-level "
+        f"variation is real in both directions and the upper tail is the "
+        f"larger half of it, not the whole story. The test is one-sided "
+        f"because the question is which junctions are worse than their "
+        f"crashes explain; the count below is what keeps that from being "
+        f"mistaken for a claim that the city is uniformly safe elsewhere."
+    )
+
+
 def build_blocks() -> Dict[str, str]:
     """Render every block the documents can reference."""
     blocks: Dict[str, Callable] = {}
@@ -322,6 +357,8 @@ def build_blocks() -> Dict[str, str]:
             blocks["finding-headline"] = finding_headline(facts, summary)
         blocks["watchlist-headline"] = watchlist_headline(summary)
         blocks["watchlist-scope"] = watchlist_scope(summary)
+        if "false_discovery" in summary:
+            blocks["false-discovery"] = false_discovery(summary)
 
     backtest = _load(BACKTEST_METRICS)
     if backtest:
