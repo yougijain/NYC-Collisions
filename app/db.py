@@ -54,6 +54,10 @@ WATCHLIST_SUMMARY_PATH = CLEAN_DIR / "watchlist_summary.json"
 
 # Traffic volumes joined onto the watchlist, for the third of sites that
 # sit near a DOT counter.
+# What the source said about itself the last time anyone asked, written
+# by scripts/check_freshness.py. Absent until that has run.
+FRESHNESS_PATH = PROJECT_ROOT / "docs" / "source_freshness.json"
+
 EXPOSURE_PATH = CLEAN_DIR / "injury_exposure.csv"
 EXPOSURE_SUMMARY_PATH = CLEAN_DIR / "exposure_summary.json"
 
@@ -256,3 +260,10 @@ def load_exposure_summary() -> Dict[str, Any]:
     if not EXPOSURE_SUMMARY_PATH.exists():
         return {}
     return json.loads(EXPOSURE_SUMMARY_PATH.read_text(encoding="utf-8"))
+
+
+def load_freshness() -> Dict[str, Any]:
+    """How current the published build is against the source."""
+    if not FRESHNESS_PATH.exists():
+        return {}
+    return json.loads(FRESHNESS_PATH.read_text(encoding="utf-8"))

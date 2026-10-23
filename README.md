@@ -57,9 +57,18 @@ A scheduled GitHub Actions workflow pulls new crashes from the NYC Open Data
 publishes it as a GitHub Release asset. The Streamlit dashboard queries that
 Parquet with DuckDB and renders filters, charts and a heatmap over New York.
 
-Coverage is January 2020 to the present, and grows on its own. <!-- generated:dataset-headline -->
+Coverage starts in January 2020 and grows whenever the source publishes, which it does not always do. <!-- generated:dataset-headline -->
 The current build holds **637,256 crashes** through **2026-06-11**. Of those, 244,916 (38.4%) injured or killed somebody: 326,869 people injured, 1,701 killed. Borough is known for 94.6% of them, against 69.3% as the source ships it.
 <!-- /generated:dataset-headline -->
+
+`scripts/check_freshness.py` asks the source for its own newest crash on
+every refresh and writes the answer to
+[`docs/source_freshness.json`](docs/source_freshness.json). It separates two
+things that look identical from inside a green pipeline: a source that has
+stopped publishing, which is nobody's bug, and a build trailing a source
+that is still publishing, which is ours. The first shows on the dashboard as
+a note, the second as a warning, and neither fails the weekly run — a job
+that goes red for something nobody can fix teaches everyone to ignore red.
 
 Those figures are generated, not typed. `scripts/dataset_facts.py` measures
 whatever build is current and writes [`docs/dataset_facts.md`](docs/dataset_facts.md)

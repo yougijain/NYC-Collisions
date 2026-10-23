@@ -43,6 +43,29 @@ def exposure_data():
     return db.load_exposure(), db.load_exposure_summary()
 
 
+@st.cache_data(ttl=QUERY_CACHE_TTL, show_spinner=False)
+def freshness_data():
+    """What the source said about itself when it was last asked."""
+    return db.load_freshness()
+
+
+def freshness_banner() -> None:
+    """Say so when the data is not as current as the page implies.
+
+    A reader who draws a conclusion from a four-month-old build deserves
+    to have been told. Two findings, two tones: a quiet source is nobody's
+    fault and reads as information, while a pipeline trailing the source
+    is a defect and reads as a warning.
+    """
+    finding = freshness_data()
+    if not finding:
+        return
+    if finding.get("pipeline_behind"):
+        st.warning(finding["headline"])
+    elif finding.get("source_quiet"):
+        st.info(finding["headline"])
+
+
 def exposure_claim(exposure: pd.DataFrame, summary: dict) -> str:
     """Why the watchlist is not a danger ranking, in one sentence.
 
