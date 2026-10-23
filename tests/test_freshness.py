@@ -36,6 +36,12 @@ def test_a_source_that_stopped_publishing_is_not_our_bug():
     assert "gone quiet" in found["headline"]
 
 
+def test_dates_read_the_same_on_every_platform():
+    """%-d is glibc-only: green in CI, ValueError on a Windows checkout."""
+    found = assess(date(2026, 6, 5), date(2026, 6, 5))
+    assert "since 5 June 2026," in found["headline"]
+
+
 def test_a_pipeline_trailing_a_live_source_is_our_bug():
     found = assess(date(2026, 10, 18), date(2026, 6, 11))
 

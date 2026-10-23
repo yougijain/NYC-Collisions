@@ -105,6 +105,15 @@ def dataset_latest(path: Path) -> date:
     return pd.to_datetime(frame["crash_datetime"]).max().date()
 
 
+def _spoken(day: date) -> str:
+    """"11 June 2026", with no leading zero on any platform.
+
+    strftime's %-d is a glibc extension. It passes CI on Linux and raises
+    ValueError on Windows, so the day is formatted by hand.
+    """
+    return f"{day.day} {day:%B %Y}"
+
+
 def assess(
     source: Optional[date],
     dataset: date,
@@ -139,7 +148,7 @@ def assess(
             "pipeline_behind": None,
             "headline": (
                 "Could not reach the source to check how current this is. "
-                f"The newest crash here is {dataset:%-d %B %Y}."
+                f"The newest crash here is {_spoken(dataset)}."
             ),
         }
 
@@ -151,19 +160,19 @@ def assess(
     if pipeline_behind:
         headline = (
             f"This build is {behind_days} days behind the source, which has "
-            f"crashes through {source:%-d %B %Y}. Records exist upstream "
+            f"crashes through {_spoken(source)}. Records exist upstream "
             f"that the pipeline has not ingested."
         )
     elif source_quiet:
         headline = (
             f"NYC Open Data has published no crashes since "
-            f"{source:%-d %B %Y}, {quiet} days ago. The pipeline is "
+            f"{_spoken(source)}, {quiet} days ago. The pipeline is "
             f"current with the source; the source has gone quiet."
         )
     else:
         headline = (
             f"Current with the source, which has crashes through "
-            f"{source:%-d %B %Y}."
+            f"{_spoken(source)}."
         )
 
     return {
