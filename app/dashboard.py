@@ -14,7 +14,15 @@ from pathlib import Path
 
 import streamlit as st
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+APP_DIR = Path(__file__).resolve().parent
+
+# `streamlit run app/dashboard.py` puts app/ on the path and nothing else:
+# not the working directory, so not the repository root. The views import
+# models/ for the arithmetic they share with the build scripts, and
+# without the root here they fail on Streamlit Cloud while every check
+# that runs from the repository root passes.
+sys.path.insert(0, str(APP_DIR.parent))
+sys.path.insert(0, str(APP_DIR))
 
 from views import crashes, finding, method, watchlist  # noqa: E402
 from views.common import connection, filter_control, freshness_banner, query  # noqa: E402
