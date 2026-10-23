@@ -62,6 +62,19 @@ def test_a_current_dataset_is_built_on(tmp_path, dataset):
     assert len(build_dataset.read_existing(out)) == len(dataset)
 
 
+def test_a_weekly_merge_does_not_depend_on_row_order(dataset):
+    """The same crashes have to come out in the same order every week, or
+    the watchlist is rescored over nothing."""
+    tied = dataset.assign(crash_datetime=pd.Timestamp("2026-06-11"))
+    held, fetched = tied.iloc[:300], tied.iloc[250:]
+
+    once = build_dataset.merge(held, fetched)
+    again = build_dataset.merge(held[::-1], fetched.sample(frac=1, random_state=0))
+
+    assert once["collision_id"].is_monotonic_increasing
+    assert once["collision_id"].tolist() == again["collision_id"].tolist()
+
+
 def test_a_stale_dataset_triggers_a_full_refetch(tmp_path, dataset, monkeypatch):
     """The rebuild has to go back to --since, not to the overlap window."""
     out = tmp_path / "collisions.parquet"

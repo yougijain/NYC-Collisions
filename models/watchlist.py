@@ -50,6 +50,7 @@ import numpy as np
 import pandas as pd
 
 from models import features as F
+from models import significance as S
 from models import injury_risk as IR
 
 # Rolling-origin scoring needs a training year and a calibration year before
@@ -239,7 +240,13 @@ def _site_borough(
 
 
 def _top_factors(factors: pd.Series, sites: pd.Series, keep: int = 2) -> pd.Series:
-    """The most common named contributing factors at each site."""
+    """The most common named contributing factors at each site.
+
+    Ties are broken by name. Without that, which of two equally common
+    factors makes the cut depends on the order value_counts happened to
+    emit them, and a rebuild over the same crashes rewrote this column for
+    about a fifth of the watchlist.
+    """
     named = factors[factors.notna() & (factors != UNINFORMATIVE_FACTOR)]
     if named.empty:
         return pd.Series(dtype="object")
@@ -248,7 +255,7 @@ def _top_factors(factors: pd.Series, sites: pd.Series, keep: int = 2) -> pd.Seri
         pd.DataFrame({"site": sites.loc[named.index], "factor": named})
         .value_counts()
         .reset_index(name="crashes")
-        .sort_values(["site", "crashes"], ascending=[True, False])
+        .sort_values(["site", "crashes", "factor"], ascending=[True, False, True])
     )
     return (
         counted.groupby("site", sort=False)
@@ -412,6 +419,10 @@ def summarise(watchlist: pd.DataFrame, scores: pd.DataFrame) -> Dict:
         # How many of those the multiple-comparison arithmetic expects for
         # free, given one two-sided test per site.
         "sites_above_z_95_by_chance": round(len(watchlist) * 0.025, 1),
+        # The same evidence read per site rather than per list. The two
+        # answer different questions and the gap between them is large, so
+        # both ship: see models/significance.py.
+        "false_discovery": S.assess(watchlist),
     }
 
 

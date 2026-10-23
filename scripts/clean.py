@@ -65,6 +65,13 @@ CANONICAL_COLUMNS: List[str] = [
     "crash_datetime",
 ]
 
+# Row order of the published dataset. Time alone is not a total order --
+# every crash logged at midnight ties -- and the default sort is free to
+# shuffle ties differently on each build. That reached the injury model,
+# whose early-stopping holdout is taken by position, so a weekly rebuild
+# over unchanged crashes rescored every site on the watchlist.
+CANONICAL_ORDER: List[str] = ["crash_datetime", "collision_id"]
+
 COUNT_COLUMNS: List[str] = [c for c in CANONICAL_COLUMNS if c.startswith("number_of_")]
 
 # >98% null in the source; dropped rather than carried as dead weight.
@@ -276,7 +283,7 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
         df: Raw DataFrame from the CSV export or the Socrata API.
 
     Returns:
-        A DataFrame with exactly CANONICAL_COLUMNS, sorted by crash_datetime.
+        A DataFrame with exactly CANONICAL_COLUMNS, in CANONICAL_ORDER.
 
     Raises:
         KeyError: If a required source column is absent.
@@ -334,4 +341,4 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     if before != len(out):
         logger.info(f"Dropped {before - len(out):,} duplicate/unusable rows")
 
-    return out.sort_values("crash_datetime").reset_index(drop=True)
+    return out.sort_values(CANONICAL_ORDER).reset_index(drop=True)
