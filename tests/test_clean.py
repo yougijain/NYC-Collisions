@@ -134,6 +134,16 @@ def test_output_is_sorted_by_crash_datetime():
     assert clean(rows)["crash_datetime"].is_monotonic_increasing
 
 
+def test_crashes_at_the_same_moment_are_ordered_by_id():
+    """Time alone leaves ties, and the injury model's early-stopping holdout
+    is taken by position, so tied rows must not land in arbitrary order."""
+    rows = pd.DataFrame([
+        api_row(collision_id=str(i)) for i in (5, 3, 9, 1, 7)
+    ])
+    assert clean(rows)["collision_id"].tolist() == [1, 3, 5, 7, 9]
+    assert clean(rows[::-1])["collision_id"].tolist() == [1, 3, 5, 7, 9]
+
+
 def test_empty_input_yields_an_empty_canonical_frame():
     out = clean(pd.DataFrame())
     assert out.empty
