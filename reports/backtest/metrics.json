@@ -19,6 +19,11 @@
       "spearman": 0.2557
     },
     {
+      "predictor": "model excess, pooled",
+      "target": "late excess",
+      "spearman": 0.2581
+    },
+    {
       "predictor": "model excess, lower 95%",
       "target": "late excess",
       "spearman": 0.2508
@@ -27,6 +32,11 @@
       "predictor": "observed injury rate",
       "target": "late excess",
       "spearman": 0.2575
+    },
+    {
+      "predictor": "observed injury rate, pooled",
+      "target": "late excess",
+      "spearman": 0.257
     },
     {
       "predictor": "crash count",
@@ -39,6 +49,11 @@
       "spearman": 0.2658
     },
     {
+      "predictor": "model excess, pooled",
+      "target": "late injury rate",
+      "spearman": 0.262
+    },
+    {
       "predictor": "model excess, lower 95%",
       "target": "late injury rate",
       "spearman": 0.2402
@@ -47,6 +62,11 @@
       "predictor": "observed injury rate",
       "target": "late injury rate",
       "spearman": 0.4692
+    },
+    {
+      "predictor": "observed injury rate, pooled",
+      "target": "late injury rate",
+      "spearman": 0.4648
     },
     {
       "predictor": "crash count",
@@ -69,6 +89,29 @@
     "null_p95": 0.1015,
     "p_value": 0.0005,
     "permutations": 2000
+  },
+  "pooled_headline": {
+    "observed": 0.2581,
+    "null_mean": -0.001,
+    "null_sd": 0.0636,
+    "null_p95": 0.1034,
+    "p_value": 0.001,
+    "permutations": 2000
+  },
+  "pooled_naive_headline": {
+    "observed": 0.257,
+    "null_mean": -0.0009,
+    "null_sd": 0.0627,
+    "null_p95": 0.0985,
+    "p_value": 0.0005,
+    "permutations": 2000
+  },
+  "pooling": {
+    "between_site_sd": 0.061,
+    "median_sampling_sd": 0.0838,
+    "weight_median": 0.346,
+    "weight_min": 0.253,
+    "weight_max": 0.676
   },
   "overlap": {
     "spearman_excess_vs_observed_rate": 0.792,
@@ -157,10 +200,23 @@
     "mean_late_excess": 0.0401,
     "mean_late_excess_rest": 0.0087
   },
+  "pooled_shortlist": {
+    "top_n": 50,
+    "still_above_expectation": 0.66,
+    "base_rate": 0.5789,
+    "lift": 1.14,
+    "mean_late_excess": 0.048,
+    "mean_late_excess_rest": 0.0067
+  },
   "shrinkage": {
     "top_n_early_excess": 0.139,
     "top_n_late_excess": 0.0401,
     "retained": 0.288
+  },
+  "pooled_fade": {
+    "top_n_pooled_early_excess": 0.0587,
+    "top_n_late_excess": 0.048,
+    "retained": 0.818
   },
   "sensitivity": [
     {
@@ -169,6 +225,8 @@
       "sites": 139,
       "model_excess": 0.2233,
       "observed_rate": 0.2324,
+      "model_excess_pooled": 0.2072,
+      "observed_rate_pooled": 0.2131,
       "p_value": 0.00399,
       "underpowered": false
     },
@@ -178,6 +236,8 @@
       "sites": 58,
       "model_excess": 0.1941,
       "observed_rate": 0.2132,
+      "model_excess_pooled": 0.183,
+      "observed_rate_pooled": 0.1993,
       "p_value": 0.09381,
       "underpowered": false
     },
@@ -193,6 +253,8 @@
       "sites": 466,
       "model_excess": 0.2798,
       "observed_rate": 0.3009,
+      "model_excess_pooled": 0.2835,
+      "observed_rate_pooled": 0.3023,
       "p_value": 0.002,
       "underpowered": false
     },
@@ -202,6 +264,8 @@
       "sites": 247,
       "model_excess": 0.2557,
       "observed_rate": 0.2575,
+      "model_excess_pooled": 0.2581,
+      "observed_rate_pooled": 0.257,
       "p_value": 0.002,
       "underpowered": false
     },
@@ -211,6 +275,8 @@
       "sites": 133,
       "model_excess": 0.2775,
       "observed_rate": 0.3231,
+      "model_excess_pooled": 0.2668,
+      "observed_rate_pooled": 0.3136,
       "p_value": 0.002,
       "underpowered": false
     },
@@ -220,6 +286,8 @@
       "sites": 293,
       "model_excess": 0.2834,
       "observed_rate": 0.2221,
+      "model_excess_pooled": 0.2717,
+      "observed_rate_pooled": 0.21,
       "p_value": 0.002,
       "underpowered": false
     },
@@ -229,6 +297,8 @@
       "sites": 127,
       "model_excess": 0.3012,
       "observed_rate": 0.2099,
+      "model_excess_pooled": 0.3056,
+      "observed_rate_pooled": 0.2119,
       "p_value": 0.002,
       "underpowered": false
     },
@@ -238,11 +308,77 @@
       "sites": 63,
       "model_excess": 0.296,
       "observed_rate": 0.2208,
+      "model_excess_pooled": 0.2962,
+      "observed_rate_pooled": 0.2142,
       "p_value": 0.01198,
       "underpowered": false
     }
   ],
   "folds": 5,
+  "seed_spread": {
+    "seeds": 5,
+    "predictors": {
+      "model excess": {
+        "mean": 0.2546,
+        "sd": 0.0027,
+        "min": 0.2525,
+        "max": 0.2589
+      },
+      "model excess, pooled": {
+        "mean": 0.2553,
+        "sd": 0.002,
+        "min": 0.2527,
+        "max": 0.2581
+      },
+      "model excess, lower 95%": {
+        "mean": 0.2522,
+        "sd": 0.0024,
+        "min": 0.2506,
+        "max": 0.2563
+      },
+      "observed injury rate": {
+        "mean": 0.2555,
+        "sd": 0.0014,
+        "min": 0.2541,
+        "max": 0.2575
+      },
+      "observed injury rate, pooled": {
+        "mean": 0.255,
+        "sd": 0.0014,
+        "min": 0.2537,
+        "max": 0.257
+      },
+      "crash count": {
+        "mean": 0.0501,
+        "sd": 0.0046,
+        "min": 0.0427,
+        "max": 0.0542
+      }
+    },
+    "comparisons": {
+      "pooling, model": {
+        "mean": 0.0007,
+        "sd": 0.0021,
+        "min": -0.0027,
+        "max": 0.0024,
+        "wins": 4
+      },
+      "model vs naive, pooled": {
+        "mean": 0.0003,
+        "sd": 0.0011,
+        "min": -0.001,
+        "max": 0.0016,
+        "wins": 3
+      },
+      "model vs naive, raw": {
+        "mean": -0.0009,
+        "sd": 0.0028,
+        "min": -0.003,
+        "max": 0.004,
+        "wins": 1
+      }
+    }
+  },
   "dataset": {
     "name": "collisions.parquet",
     "dataset_version": 4,

@@ -19,7 +19,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import pandas as pd
 
@@ -42,6 +42,87 @@ logger = logging.getLogger(__name__)
 REPORT_DIR = ROOT / "reports" / "backtest"
 SPLIT_YEAR = 2024
 
+# Model seeds behind the noise floor, the default included. Each one is a
+# full rolling-origin rescoring, about two minutes on a CI runner, so five
+# buys a usable spread without doubling the weekly refresh.
+SEEDS = 5
+
+
+def pooling_section(metrics: Dict) -> List[str]:
+    """Partial pooling: how hard it pulled, and what it changed."""
+    pool, fade = metrics["pooling"], metrics["pooled_fade"]
+    head, naive = metrics["pooled_headline"], metrics["pooled_naive_headline"]
+    short = metrics["pooled_shortlist"]
+    retained = "n/a" if fade["retained"] is None else f"{fade['retained']:.0%}"
+    sweep = [r for r in metrics["sensitivity"] if not r["underpowered"]]
+    helps = sum(1 for r in sweep if r["model_excess_pooled"] > r["model_excess"])
+    beats = sum(
+        1 for r in sweep if r["model_excess_pooled"] > r["observed_rate_pooled"]
+    )
+    return [
+        "",
+        "## Partial pooling",
+        "",
+        f"Sites in the early window truly differ by about "
+        f"{pool['between_site_sd'] * 100:.1f} points of excess (between-site "
+        f"sd), against a median sampling sd of "
+        f"{pool['median_sampling_sd'] * 100:.1f} points for one site's own "
+        f"estimate. So a typical site keeps "
+        f"{pool['weight_median']:.0%} of its deviation from the mean, "
+        f"ranging from {pool['weight_min']:.0%} to {pool['weight_max']:.0%}.",
+        "",
+        f"- Pooled early excess predicts late excess at **{head['observed']}** "
+        f"(p = {head['p_value']}), against **{naive['observed']}** for raw "
+        f"injury rates pooled the same way.",
+        f"- Across {len(sweep)} split-and-threshold combinations, pooling "
+        f"improves the model's ordering in {helps} and the pooled model "
+        f"beats the pooled naive ordering in {beats}.",
+        f"- The top {short['top_n']} by pooled excess: "
+        f"{short['still_above_expectation']:.0%} still above expectation "
+        f"against a {short['base_rate']:.0%} base rate.",
+        f"- Their pooled early excess was "
+        f"{fade['top_n_pooled_early_excess'] * 100:+.1f} points and their "
+        f"late excess {fade['top_n_late_excess'] * 100:+.1f}, retaining "
+        f"{retained}. A calibrated pooled estimate would retain about all "
+        f"of it; well under that means it was not pulled hard enough.",
+    ]
+
+
+def seed_section(metrics: Dict) -> List[str]:
+    """How much of any difference is the model's seed."""
+    spread = metrics.get("seed_spread")
+    if not spread:
+        return []
+    lines = [
+        "",
+        "## Noise floor",
+        "",
+        f"Everything above rescored under {spread['seeds']} model seeds. "
+        f"Only the early-stopping holdout changes between them, so any "
+        f"difference smaller than this spread is not a difference.",
+        "",
+        "| Predictor | Mean | sd | Range |",
+        "|---|---|---|---|",
+    ]
+    for label, row in spread["predictors"].items():
+        if row["mean"] is None:
+            continue
+        lines.append(
+            f"| {label} | {row['mean']:.3f} | {row['sd']:.3f} | "
+            f"{row['min']:.3f} to {row['max']:.3f} |"
+        )
+    lines += [
+        "",
+        "| Comparison | Mean difference | sd | Wins |",
+        "|---|---|---|---|",
+    ]
+    for name, row in spread["comparisons"].items():
+        lines.append(
+            f"| {name} | {row['mean']:+.4f} | {row['sd']:.4f} | "
+            f"{row['wins']} of {spread['seeds']} |"
+        )
+    return lines
+
 
 def report(metrics: Dict) -> str:
     """Render the findings as markdown."""
@@ -61,7 +142,7 @@ def report(metrics: Dict) -> str:
         "",
         f"Early excess predicts late excess at a Spearman correlation of "
         f"**{head['observed']}** "
-        f"(permutation null {naive['null_mean']} ± {head['null_sd']}, "
+        f"(permutation null {head['null_mean']} ± {head['null_sd']}, "
         f"p = {head['p_value']}).",
         "",
         "Sorting by raw injury rate instead, with no model, predicts the "
@@ -112,21 +193,26 @@ def report(metrics: Dict) -> str:
         "the headline because it was chosen before the first run, not "
         "because of how it came out.",
         "",
-        "| Split | Min crashes | Sites | Model excess | Injury rate | p |",
-        "|---|---|---|---|---|---|",
+        "| Split | Min crashes | Sites | Model excess | Injury rate "
+        "| Model, pooled | Rate, pooled | p |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for row in metrics["sensitivity"]:
         if row["underpowered"]:
             lines.append(
                 f"| {row['split_year']} | {row['min_window_crashes']} | "
-                f"{row['sites']} | _too few to rank_ | | |"
+                f"{row['sites']} | _too few to rank_ | | | | |"
             )
         else:
             lines.append(
                 f"| {row['split_year']} | {row['min_window_crashes']} | "
                 f"{row['sites']} | {row['model_excess']:.3f} | "
-                f"{row['observed_rate']:.3f} | {row['p_value']} |"
+                f"{row['observed_rate']:.3f} | "
+                f"{row['model_excess_pooled']:.3f} | "
+                f"{row['observed_rate_pooled']:.3f} | {row['p_value']} |"
             )
+    lines += pooling_section(metrics)
+    lines += seed_section(metrics)
 
     lift = "n/a" if short["lift"] is None else f"{short['lift']:.2f}x"
     retained = "n/a" if shrink["retained"] is None else f"{shrink['retained']:.0%}"
@@ -144,7 +230,7 @@ def report(metrics: Dict) -> str:
         "",
         "## Regression to the mean",
         "",
-        f"The top {shrink['top_n_early_excess'] and short['top_n']} sites "
+        f"The top {short['top_n']} sites "
         f"averaged {shrink['top_n_early_excess'] * 100:+.1f} points of excess "
         f"in the early window and {shrink['top_n_late_excess'] * 100:+.1f} "
         f"in the later one, retaining {retained}. Some shrinkage is "
@@ -162,9 +248,14 @@ def run(
     min_crashes: int = B.MIN_WINDOW_CRASHES,
     permutations: int = B.PERMUTATIONS,
     output_dir: Path = REPORT_DIR,
+    seeds: int = SEEDS,
     **overrides,
 ) -> Dict:
-    """Score every crash, split the window, and write the report."""
+    """Score every crash, split the window, and write the report.
+
+    `seeds` counts full rescorings under different model seeds, including
+    the default one; 1 skips the seed spread.
+    """
     path = dataset or db.resolve_dataset()
     logger.info(f"Reading {path}")
     df = pd.read_parquet(path)
@@ -174,6 +265,19 @@ def run(
 
     metrics = B.run(df, scores, split_year, min_crashes, permutations)
     metrics["folds"] = len(folds)
+
+    # The default model is seed 0; the others refit everything with a
+    # different early-stopping holdout and nothing else changed.
+    score_sets = [scores]
+    for seed in range(1, seeds):
+        logger.info(f"Rescoring under seed {seed} of {seeds - 1}")
+        score_sets.append(
+            W.rolling_scores(df, **{**overrides, "random_state": seed})[0]
+        )
+    if len(score_sets) > 1:
+        metrics["seed_spread"] = B.seed_spread(
+            df, score_sets, split_year, min_crashes
+        )
     metrics["dataset"] = provenance(path)
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -191,6 +295,11 @@ def parse_args(argv: Optional[list] = None) -> argparse.Namespace:
     parser.add_argument("--min-crashes", type=int, default=B.MIN_WINDOW_CRASHES)
     parser.add_argument("--permutations", type=int, default=B.PERMUTATIONS)
     parser.add_argument("--dataset", default=None)
+    parser.add_argument(
+        "--seeds", type=int, default=SEEDS,
+        help="model seeds behind the noise floor, the default included; "
+             "1 skips it",
+    )
     return parser.parse_args(argv)
 
 
@@ -201,6 +310,7 @@ def main() -> None:
         split_year=args.split_year,
         min_crashes=args.min_crashes,
         permutations=args.permutations,
+        seeds=args.seeds,
     )
     print(json.dumps(metrics["headline"], indent=2))
 
