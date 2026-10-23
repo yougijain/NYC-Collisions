@@ -395,14 +395,18 @@ def render(boroughs: list[str], basemap) -> None:
     # The raw excess of the top sites overstates what they go on to do by
     # about a factor of three; the pooled one is close. See
     # models/shrinkage.py and the backtest's partial-pooling section.
-    display["Pooled (pts)"] = shown["excess_shrunk"] * 100
+    # Absent from a watchlist built before pooling, which a cached frame on
+    # a running deployment can still be for a while after this ships.
+    columns = [
+        "Intersection", "Borough", "Crashes", "Injured", "Expected",
+        "Borough-hour base", "Excess (pts)", "Most common factors",
+    ]
+    if "excess_shrunk" in shown.columns:
+        display["Pooled (pts)"] = shown["excess_shrunk"] * 100
+        columns.insert(columns.index("Excess (pts)") + 1, "Pooled (pts)")
 
     st.dataframe(
-        display[[
-            "Intersection", "Borough", "Crashes", "Injured", "Expected",
-            "Borough-hour base", "Excess (pts)", "Pooled (pts)",
-            "Most common factors",
-        ]],
+        display[columns],
         hide_index=True,
         use_container_width=True,
         column_config={
