@@ -239,7 +239,13 @@ def _site_borough(
 
 
 def _top_factors(factors: pd.Series, sites: pd.Series, keep: int = 2) -> pd.Series:
-    """The most common named contributing factors at each site."""
+    """The most common named contributing factors at each site.
+
+    Ties are broken by name. Without that, which of two equally common
+    factors makes the cut depends on the order value_counts happened to
+    emit them, and a rebuild over the same crashes rewrote this column for
+    about a fifth of the watchlist.
+    """
     named = factors[factors.notna() & (factors != UNINFORMATIVE_FACTOR)]
     if named.empty:
         return pd.Series(dtype="object")
@@ -248,7 +254,7 @@ def _top_factors(factors: pd.Series, sites: pd.Series, keep: int = 2) -> pd.Seri
         pd.DataFrame({"site": sites.loc[named.index], "factor": named})
         .value_counts()
         .reset_index(name="crashes")
-        .sort_values(["site", "crashes"], ascending=[True, False])
+        .sort_values(["site", "crashes", "factor"], ascending=[True, False, True])
     )
     return (
         counted.groupby("site", sort=False)
