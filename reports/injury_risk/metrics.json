@@ -2,7 +2,7 @@
   "dataset": {
     "name": "collisions.parquet",
     "dataset_version": 4,
-    "built_at": "2026-10-19T14:45:02.291342+00:00"
+    "built_at": "2026-10-23T16:04:49.525313+00:00"
   },
   "split": {
     "calibration_start": "2024-01-01",
@@ -27,7 +27,7 @@
     }
   },
   "model": {
-    "boosting_rounds": 523,
+    "boosting_rounds": 436,
     "level_shift": 0.3401,
     "features": [
       "borough",
@@ -72,18 +72,18 @@
       "observed_rate": 0.4321
     },
     "Gradient boosting (uncalibrated)": {
-      "roc_auc": 0.7945,
+      "roc_auc": 0.7946,
       "brier": 0.1862,
       "log_loss": 0.5504,
-      "mean_predicted": 0.3654,
+      "mean_predicted": 0.365,
       "observed_rate": 0.4321,
       "brier_skill_vs_baseline": 0.2486
     },
     "Gradient boosting": {
-      "roc_auc": 0.7945,
+      "roc_auc": 0.7946,
       "brier": 0.1811,
-      "log_loss": 0.5374,
-      "mean_predicted": 0.4228,
+      "log_loss": 0.5373,
+      "mean_predicted": 0.4225,
       "observed_rate": 0.4321,
       "brier_skill_vs_baseline": 0.2692
     }
@@ -91,57 +91,57 @@
   "feature_importance": [
     {
       "feature": "factor_2",
-      "auc_drop": 0.0965,
-      "sd": 0.0007
+      "auc_drop": 0.0969,
+      "sd": 0.0006
     },
     {
       "feature": "vehicle_2",
-      "auc_drop": 0.0927,
-      "sd": 0.0005
+      "auc_drop": 0.0912,
+      "sd": 0.0003
     },
     {
       "feature": "factor_1",
-      "auc_drop": 0.073,
-      "sd": 0.001
+      "auc_drop": 0.0734,
+      "sd": 0.0011
     },
     {
       "feature": "vehicle_1",
       "auc_drop": 0.0522,
-      "sd": 0.0004
+      "sd": 0.0005
     },
     {
       "feature": "road_class",
-      "auc_drop": 0.0299,
-      "sd": 0.0003
+      "auc_drop": 0.0296,
+      "sd": 0.0004
     },
     {
       "feature": "borough",
       "auc_drop": 0.0052,
-      "sd": 0.0002
+      "sd": 0.0003
     },
     {
       "feature": "vehicle_count",
       "auc_drop": 0.0051,
-      "sd": 0.0003
+      "sd": 0.0002
     },
     {
       "feature": "hour",
-      "auc_drop": 0.0049,
+      "auc_drop": 0.0048,
       "sd": 0.0001
     },
     {
       "feature": "month",
-      "auc_drop": 0.0023,
-      "sd": 0.0002
+      "auc_drop": 0.0024,
+      "sd": 0.0001
     },
     {
       "feature": "at_intersection",
       "auc_drop": 0.0012,
-      "sd": 0.0
+      "sd": 0.0001
     },
     {
       "feature": "weekday",
-      "auc_drop": 0.0003,
+      "auc_drop": 0.0004,
       "sd": 0.0001
     }
   ]

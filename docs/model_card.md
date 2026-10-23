@@ -104,8 +104,8 @@ Regenerate with `python scripts/train_injury_risk.py`; full output in
 | Predictor | ROC-AUC | Brier | Log loss | Mean predicted | Brier skill |
 |---|---|---|---|---|---|
 | Borough × hour base rate | 0.5425 | 0.2478 | 0.6891 | 0.371 | — |
-| Gradient boosting (uncalibrated) | 0.7945 | 0.1862 | 0.5504 | 0.365 | +24.9% |
-| **Gradient boosting** | **0.7945** | **0.1811** | **0.5374** | **0.423** | **+26.9%** |
+| Gradient boosting (uncalibrated) | 0.7946 | 0.1862 | 0.5504 | 0.365 | +24.9% |
+| **Gradient boosting** | **0.7946** | **0.1811** | **0.5373** | **0.422** | **+26.9%** |
 
 Observed injury rate on the test fold: 0.432.
 <!-- /generated:model-metrics -->
@@ -129,17 +129,17 @@ shuffled:
 <!-- generated:feature-importance -->
 | Feature | AUC drop |
 |---|---|
-| `factor_2` | 0.0965 |
-| `vehicle_2` | 0.0927 |
-| `factor_1` | 0.0730 |
+| `factor_2` | 0.0969 |
+| `vehicle_2` | 0.0912 |
+| `factor_1` | 0.0734 |
 | `vehicle_1` | 0.0522 |
-| `road_class` | 0.0299 |
+| `road_class` | 0.0296 |
 | `borough` | 0.0052 |
 | `vehicle_count` | 0.0051 |
-| `hour` | 0.0049 |
-| `month` | 0.0023 |
+| `hour` | 0.0048 |
+| `month` | 0.0024 |
 | `at_intersection` | 0.0012 |
-| `weekday` | 0.0003 |
+| `weekday` | 0.0004 |
 <!-- /generated:feature-importance -->
 
 What was hit and why dominates; when and where barely register. The injury
@@ -158,9 +158,9 @@ that works, with an open question about which part of it is doing the work.
 <!-- generated:backtest-finding -->
 Ranked on **2022–2023** alone, then checked against **2024–2026**, over the 247 sites with at least 20 scored crashes in both windows.
 
-**The ranking does predict the future.** Early excess and late excess correlate at a Spearman of **0.2625**, against a permutation null of 0.0013 ± 0.0651 (p = 0.0005). Of the top 50 sites, 64% were still above expectation in the later window against a 56% base rate, a 1.14x lift, and they averaged +4.0 points of excess against +0.9 for the rest.
+**The ranking does predict the future.** Early excess and late excess correlate at a Spearman of **0.2557**, against a permutation null of -0.0006 ± 0.0637 (p = 0.0015). Of the top 50 sites, 66% were still above expectation in the later window against a 58% base rate, a 1.14x lift, and they averaged +4.0 points of excess against +0.9 for the rest.
 
-**What it does not show is that the model earns its place.** Sorting the same sites by raw injury rate, with no model at all, predicts late excess at **0.2594** — a tie at this split. Across 8 split-and-threshold combinations the crash-mix adjustment beats the naive ordering in 4 of them and loses in 4, so the comparison is not stable enough to claim either way. Full table in [`reports/backtest/results.md`](reports/backtest/results.md).
+**What it does not show is that the model earns its place.** Sorting the same sites by raw injury rate, with no model at all, predicts late excess at **0.2575** — a tie at this split. Across 8 split-and-threshold combinations the crash-mix adjustment beats the naive ordering in 3 of them and loses in 5, so the comparison is not stable enough to claim either way. Full table in [`reports/backtest/results.md`](reports/backtest/results.md).
 <!-- /generated:backtest-finding -->
 
 **The exposure denominator is partial.** This is the big one. Every rate the
@@ -175,7 +175,7 @@ That converts this limitation from an assertion into a measurement:
 <!-- generated:exposure-coverage -->
 NYC DOT's automated traffic counts reach **425 of the 1,075 located sites** (39.5%): a recorder within 150m whose location text names one of the junction's own streets. Those sites see a median 14,314 vehicles a day past the counter, and a median 0.824 crashes that hurt someone per million vehicles.
 
-Ranking them by that rate rather than by crash mix gives a substantially different order — the two agree at a Spearman correlation of **0.265**. That is the distance between the two questions, in a number.
+Ranking them by that rate rather than by crash mix gives a substantially different order — the two agree at a Spearman correlation of **0.269**. That is the distance between the two questions, in a number.
 
 It is also why the watchlist is not re-ranked by it. A recorder sits on one segment rather than across a junction, and 338 of the matched counters cover a single direction, roughly half the traffic on a two-way street; sort by crashes per vehicle and the head of the list is whichever junction has the most under-measured traffic. Counts are a median 10 years old, the oldest from 2007. So every row carries a grade for how much weight it can take — 46 high (the counter names both streets and covers both directions), 190 medium, 189 low — and the ranking stays with the crash-mix residual, which covers every site rather than a third of them.
 <!-- /generated:exposure-coverage -->
@@ -264,7 +264,7 @@ Testing 1,093 intersections at once, 101 clear z = 1.96 where chance alone would
 
 It is not an argument for any single entry on it. Under Benjamini-Hochberg at q = 0.05, **2 of 1,093 survive** (Bonferroni: 1); the largest z anywhere is 3.98, smallest p 3.5e-05. So the ranking is a screening queue whose head is worth a site visit, not a list of 101 established hazards.
 
-The lower tail says the same thing from the other side. 68 sites sit more than 1.96 standard errors *below* expectation, also against about 27 by chance, so site-level variation is real in both directions and the upper tail is the larger half of it, not the whole story. The test is one-sided because the question is which junctions are worse than their crashes explain; the count below is what keeps that from being mistaken for a claim that the city is uniformly safe elsewhere.
+The lower tail says the same thing from the other side. 69 sites sit more than 1.96 standard errors *below* expectation, also against about 27 by chance, so site-level variation is real in both directions and the upper tail is the larger half of it, not the whole story. The test is one-sided because the question is which junctions are worse than their crashes explain; the count below is what keeps that from being mistaken for a claim that the city is uniformly safe elsewhere.
 <!-- /generated:false-discovery -->
 
 `models/significance.py` computes both and `models/watchlist.py` stores them
