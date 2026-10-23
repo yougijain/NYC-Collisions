@@ -56,8 +56,12 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Import every page with the training extras absent
+        # -I keeps the working directory off sys.path, as `streamlit run`
+        # does. Without it the repository root is importable here and
+        # nowhere else, which hid a views -> models import that took the
+        # deployed app down while this step passed.
         run: |
-          python - <<'EOF'
+          python -I - <<'EOF'
           import importlib
           import sys
 
