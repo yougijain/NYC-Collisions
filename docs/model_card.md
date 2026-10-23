@@ -245,7 +245,7 @@ rather than a claim about absolute risk, and it absorbs whatever level bias
 the model has left.
 
 **The ranking is a lower bound.** A site with 25 crashes and a 30-point excess
-is a weaker finding than one with 400 crashes and 15 points, so sites are
+is a weaker finding than one with 200 crashes and 15 points, so sites are
 ordered by the conservative end of a 95% interval rather than by the estimate,
 on top of a hard minimum of 25 crashes. `excess_z` is published alongside so a
 reader can see the arithmetic. The head of the list is signal; the tail is a
@@ -254,6 +254,23 @@ screening queue, not a verdict.
 <!-- generated:watchlist-scope -->
 Keying sites direction-free merges 65,544 apparent intersections into 40,695 real ones. The current build lists 1,093 of them, over 413,780 scored crashes from 2022-01-01 to 2026-06-11, with 101 above z = 1.96 against roughly 27 expected by chance.
 <!-- /generated:watchlist-scope -->
+
+**Multiple comparisons.** The count above z = 1.96 is a statement about the
+list, not about its members. Ranking 1,093 sites is 1,093 simultaneous tests,
+and the per-site reading is far more conservative:
+
+<!-- generated:false-discovery -->
+Testing 1,093 intersections at once, 101 clear z = 1.96 where chance alone would produce about 27 -- an excess of roughly 74 sites. That is the argument for the list.
+
+It is not an argument for any single entry on it. Under Benjamini-Hochberg at q = 0.05, **2 of 1,093 survive** (Bonferroni: 1); the largest z anywhere is 3.98, smallest p 3.5e-05. So the ranking is a screening queue whose head is worth a site visit, not a list of 101 established hazards.
+
+The lower tail says the same thing from the other side. 68 sites sit more than 1.96 standard errors *below* expectation, also against about 27 by chance, so site-level variation is real in both directions and the upper tail is the larger half of it, not the whole story. The test is one-sided because the question is which junctions are worse than their crashes explain; the count below is what keeps that from being mistaken for a claim that the city is uniformly safe elsewhere.
+<!-- /generated:false-discovery -->
+
+`models/significance.py` computes both and `models/watchlist.py` stores them
+under `false_discovery` in the summary, so neither framing can be quoted
+without the other being one field away. The dashboard renders the funnel plot
+(a p-chart with varying sample size) from the same function.
 
 Regenerate with `python scripts/build_watchlist.py`.
 

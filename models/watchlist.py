@@ -50,6 +50,7 @@ import numpy as np
 import pandas as pd
 
 from models import features as F
+from models import significance as S
 from models import injury_risk as IR
 
 # Rolling-origin scoring needs a training year and a calibration year before
@@ -412,6 +413,10 @@ def summarise(watchlist: pd.DataFrame, scores: pd.DataFrame) -> Dict:
         # How many of those the multiple-comparison arithmetic expects for
         # free, given one two-sided test per site.
         "sites_above_z_95_by_chance": round(len(watchlist) * 0.025, 1),
+        # The same evidence read per site rather than per list. The two
+        # answer different questions and the gap between them is large, so
+        # both ship: see models/significance.py.
+        "false_discovery": S.assess(watchlist),
     }
 
 
