@@ -199,6 +199,21 @@ def test_top_factors_skip_the_one_that_names_nothing(sites):
     assert not sites["top_factors"].str.contains("Unspecified").any()
 
 
+def test_equally_common_factors_are_chosen_by_name_not_by_row_order():
+    """Which of three tied factors made the top two used to be whatever order
+    value_counts emitted them in. That held still on any one machine and
+    flipped between CI runners, rewriting 210 rows of the committed CSV on
+    weekly refreshes over unchanged crashes."""
+    factors = pd.Series(["SPEEDING", "BACKING UNSAFELY", "ALCOHOL INVOLVEMENT"])
+    sites = pd.Series(["A @ B"] * 3)
+
+    forward = W._top_factors(factors, sites)
+    backward = W._top_factors(factors[::-1], sites[::-1])
+
+    assert forward.loc["A @ B"] == "Alcohol Involvement; Backing Unsafely"
+    assert backward.equals(forward)
+
+
 # --- factors -----------------------------------------------------------
 
 def test_factors_are_ordered_by_predicted_risk(crashes, scores):

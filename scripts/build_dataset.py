@@ -27,7 +27,12 @@ import pyarrow.parquet as pq
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from clean import CANONICAL_COLUMNS, DATASET_VERSION, clean  # noqa: E402
+from clean import (  # noqa: E402
+    CANONICAL_COLUMNS,
+    CANONICAL_ORDER,
+    DATASET_VERSION,
+    clean,
+)
 from fetch_data import fetch_collisions  # noqa: E402
 
 logging.basicConfig(
@@ -224,7 +229,7 @@ def merge(existing: Optional[pd.DataFrame], incoming: pd.DataFrame) -> pd.DataFr
     combined = pd.concat([existing, incoming], ignore_index=True)
     # `incoming` is appended last, so keep="last" prefers the fresher record.
     combined = combined.drop_duplicates(subset="collision_id", keep="last")
-    return combined.sort_values("crash_datetime").reset_index(drop=True)
+    return combined.sort_values(CANONICAL_ORDER).reset_index(drop=True)
 
 
 def write(df: pd.DataFrame, path: Path) -> None:
