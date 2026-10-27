@@ -174,8 +174,14 @@ jobs:
                   README.md \
                   docs/model_card.md
 
-          if git diff --cached --quiet; then
-            echo "Figures unchanged."
+          # Every build stamps its own time into the provenance lines, so
+          # a rebuild over unchanged crashes still differs from the last
+          # commit. Lines that only carry a build or generation time do not
+          # count as a change; anything else, including the freshness
+          # record's day counts, still does.
+          provenance='"built_at": |"generated_at": |\| Build timestamp \||^Generated [0-9]{4}-'
+          if git diff --cached --quiet -I "$provenance"; then
+            echo "Figures unchanged; only build timestamps moved."
             exit 0
           fi
 
