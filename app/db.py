@@ -19,7 +19,6 @@ import json
 import logging
 import os
 import re
-import shutil
 import tempfile
 import time
 from pathlib import Path
@@ -63,25 +62,45 @@ EXPOSURE_SUMMARY_PATH = CLEAN_DIR / "exposure_summary.json"
 
 # Re-download the Release asset at most this often.
 CACHE_TTL_SECONDS = 6 * 60 * 60
+
+# requests' timeout bounds each read, not the transfer: a server that
+# trickles a byte every minute never trips it. The deadline bounds the
+# whole download, so a slow host gives up and serves the stale cache or
+# the seed rather than holding the dashboard on "Running" indefinitely.
 DOWNLOAD_TIMEOUT = 120
+DOWNLOAD_DEADLINE = 180
+_CHUNK_BYTES = 1 << 20
 
 TABLE_NAME = "collisions_clean"
 _PARAM_PATTERN = re.compile(r"\$([a-z_][a-z0-9_]*)", re.IGNORECASE)
 
 
-def _download(url: str, destination: Path) -> bool:
-    """Stream `url` to `destination` atomically. Returns False on failure."""
+def _download(
+    url: str, destination: Path, deadline: float = DOWNLOAD_DEADLINE
+) -> bool:
+    """Stream `url` to `destination` atomically. Returns False on failure.
+
+    Gives up once `deadline` seconds have passed in total, however steadily
+    bytes are still arriving. TimeoutError is an OSError, so it lands in the
+    same fallback as any other failed download.
+    """
     destination.parent.mkdir(parents=True, exist_ok=True)
     tmp_fd, tmp_name = tempfile.mkstemp(dir=destination.parent, suffix=".part")
     tmp_path = Path(tmp_name)
     os.close(tmp_fd)
 
+    started = time.monotonic()
     try:
         logger.info(f"Downloading dataset from {url}")
         with requests.get(url, stream=True, timeout=DOWNLOAD_TIMEOUT) as response:
             response.raise_for_status()
             with open(tmp_path, "wb") as handle:
-                shutil.copyfileobj(response.raw, handle)
+                for chunk in response.iter_content(chunk_size=_CHUNK_BYTES):
+                    if time.monotonic() - started > deadline:
+                        raise TimeoutError(
+                            f"download still running after {deadline:.0f}s"
+                        )
+                    handle.write(chunk)
         # Move into place only once the body is fully written.
         tmp_path.replace(destination)
         size_mb = destination.stat().st_size / (1024 * 1024)
