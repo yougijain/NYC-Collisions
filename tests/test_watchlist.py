@@ -285,6 +285,27 @@ def test_the_build_script_writes_its_three_files(dataset_path, tmp_path):
     assert summary["sites"] == len(pd.read_csv(tmp_path / "injury_watchlist.csv"))
 
 
+def test_nothing_is_published_to_more_digits_than_it_carries(dataset_path, tmp_path):
+    """Digits past the fourth are summation order, which differs between
+    machines. Written out in full, they rewrote committed files on rebuilds
+    over unchanged crashes."""
+    import build_watchlist
+
+    summary = build_watchlist.run(
+        dataset=dataset_path, min_crashes=LOW_BAR, output_dir=tmp_path
+    )
+    for name in ("injury_watchlist.csv", "injury_risk_factors.csv"):
+        frame = pd.read_csv(tmp_path / name)
+        for column in frame.select_dtypes("float").columns:
+            if column in ("latitude", "longitude"):
+                continue
+            rounded = frame[column].round(build_watchlist.RATE_PRECISION)
+            assert (frame[column] - rounded).abs().max() < 1e-12, (name, column)
+
+    smallest = summary["false_discovery"]["smallest_p"]
+    assert smallest == float(f"{smallest:.4g}")
+
+
 def test_the_build_script_refuses_to_write_an_empty_watchlist(dataset_path, tmp_path):
     import build_watchlist
 

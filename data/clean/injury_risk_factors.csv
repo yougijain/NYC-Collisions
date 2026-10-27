@@ -1,32 +1,32 @@
 factor,crashes,predicted_rate,observed_rate
-Pedestrian/Bicyclist/Other Pedestrian Error/Confusion,4706,0.8324014993009129,0.8309
-Not recorded,2798,0.8293807496130535,0.8452
-Lost Consciousness,842,0.8288991867572242,0.7933
-Illnes,710,0.7491310803061467,0.7028
-Failure To Yield Right-Of-Way,28247,0.684478172524334,0.7102
-Traffic Control Disregarded,11384,0.6257436747596385,0.6369
-Glare,690,0.6111357512688328,0.5884
-Passenger Distraction,1198,0.5160090554741233,0.5534
-Unsafe Speed,14581,0.5045656689430879,0.4969
-View Obstructed/Limited,3884,0.5009571545697505,0.5214
-Brakes Defective,1590,0.4885437472395001,0.495
-Driver Inattention/Distraction,101478,0.42162690097335914,0.436
-Following Too Closely,24805,0.42076759239271466,0.4445
-Aggressive Driving/Road Rage,3537,0.41906088952438375,0.3904
-Outside Car Distraction,921,0.4185746431415452,0.3952
-Fell Asleep,1848,0.4075183742141036,0.3994
-Reaction To Uninvolved Vehicle,4702,0.4054238127556578,0.4351
-Pavement Slippery,3172,0.40001073778355417,0.4174
-Alcohol Involvement,7716,0.3955660857924277,0.3625
-Driver Inexperience,8828,0.3789667632720148,0.379
-Turning Improperly,9633,0.3705902966445487,0.3873
-Other Vehicular,13215,0.34427542446855114,0.3631
-Steering Failure,897,0.33658185098827137,0.311
-Obstruction/Debris,882,0.3316659612725353,0.3469
-Unsafe Lane Changing,8436,0.3287844646161457,0.3681
-Tire Failure/Inadequate,652,0.3257828938001584,0.3298
-Unspecified,102528,0.3090389004526818,0.3399
-Passing Or Lane Usage Improper,17483,0.28797784480634203,0.3154
-Backing Unsafely,12559,0.20798904367052717,0.2189
-Passing Too Closely,14172,0.13418516674194997,0.1467
-Oversized Vehicle,1655,0.13234969664302565,0.1523
+Pedestrian/Bicyclist/Other Pedestrian Error/Confusion,4706,0.8324,0.8309
+Not recorded,2798,0.8294,0.8452
+Lost Consciousness,842,0.8289,0.7933
+Illnes,710,0.7491,0.7028
+Failure To Yield Right-Of-Way,28247,0.6845,0.7102
+Traffic Control Disregarded,11384,0.6257,0.6369
+Glare,690,0.6111,0.5884
+Passenger Distraction,1198,0.516,0.5534
+Unsafe Speed,14581,0.5046,0.4969
+View Obstructed/Limited,3884,0.501,0.5214
+Brakes Defective,1590,0.4885,0.495
+Driver Inattention/Distraction,101478,0.4216,0.436
+Following Too Closely,24805,0.4208,0.4445
+Aggressive Driving/Road Rage,3537,0.4191,0.3904
+Outside Car Distraction,921,0.4186,0.3952
+Fell Asleep,1848,0.4075,0.3994
+Reaction To Uninvolved Vehicle,4702,0.4054,0.4351
+Pavement Slippery,3172,0.4,0.4174
+Alcohol Involvement,7716,0.3956,0.3625
+Driver Inexperience,8828,0.379,0.379
+Turning Improperly,9633,0.3706,0.3873
+Other Vehicular,13215,0.3443,0.3631
+Steering Failure,897,0.3366,0.311
+Obstruction/Debris,882,0.3317,0.3469
+Unsafe Lane Changing,8436,0.3288,0.3681
+Tire Failure/Inadequate,652,0.3258,0.3298
+Unspecified,102528,0.309,0.3399
+Passing Or Lane Usage Improper,17483,0.288,0.3154
+Backing Unsafely,12559,0.208,0.2189
+Passing Too Closely,14172,0.1342,0.1467
+Oversized Vehicle,1655,0.1323,0.1523
