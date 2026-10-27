@@ -191,7 +191,9 @@ def assess(sites: pd.DataFrame, q: float = DEFAULT_Q) -> Dict:
         # The per-site reading: what one junction can carry on its own.
         "survivors": int(survived.sum()),
         "survivors_bonferroni": bonferroni,
-        "smallest_p": float(p.min()),
+        # Four significant figures. Every digit past that is summation
+        # order, which differs between machines and churned the summary.
+        "smallest_p": float(f"{p.min():.4g}"),
         "largest_z": round(float(sites["excess_z"].max()), 2),
         "survivor_sites": sites.loc[survived, "site"].tolist(),
     }
