@@ -50,6 +50,7 @@ import numpy as np
 import pandas as pd
 
 from models import features as F
+from models import shrinkage as SH
 from models import significance as S
 from models import injury_risk as IR
 
@@ -281,7 +282,9 @@ def rank_sites(
         One row per qualifying site, ordered by `excess_lower_95` descending:
 
         site, borough, crashes, observed_rate, expected_rate, base_rate,
-        excess, excess_z, excess_lower_95, latitude, longitude, top_factors
+        excess, excess_z, excess_lower_95, excess_shrunk,
+        excess_shrunk_lower_95, pooling_weight, latitude, longitude,
+        top_factors
 
         `excess` is the observed rate minus the predicted rate, centred so
         the scored population nets to zero. `excess_lower_95` is the
@@ -289,6 +292,9 @@ def rank_sites(
         `excess_z` is there so a reader can see how much of the ordering is
         signal: across several hundred sites, a handful will clear z = 1.96
         on chance alone, and this is a screening list rather than a test.
+        `excess_shrunk` is the same excess after partial pooling across
+        sites, and `pooling_weight` the share of its own deviation each
+        site keeps.
     """
     sites = site_key(df)
     usable = scores["model"].notna() & sites.notna()
@@ -335,6 +341,18 @@ def rank_sites(
     qualifying["excess_z"] = qualifying["excess"] / standard_error
     qualifying["excess_lower_95"] = qualifying["excess"] - Z_95 * standard_error
 
+    # How much of each excess survives partial pooling: see
+    # models/shrinkage.py. One site has no spread to pool against.
+    if len(qualifying) >= 2:
+        pooled = SH.shrink(qualifying["excess"], standard_error ** 2)
+        qualifying["excess_shrunk"] = pooled["shrunk"]
+        qualifying["excess_shrunk_lower_95"] = pooled["shrunk_lower_95"]
+        qualifying["pooling_weight"] = pooled["weight"]
+    else:
+        qualifying["excess_shrunk"] = qualifying["excess"]
+        qualifying["excess_shrunk_lower_95"] = qualifying["excess_lower_95"]
+        qualifying["pooling_weight"] = 1.0
+
     # Enrich only the survivors: the per-site mode and factor counts are the
     # slow part, and there are three orders of magnitude fewer of these.
     survivors = frame.index[frame["site"].isin(qualifying.index)]
@@ -350,6 +368,7 @@ def rank_sites(
     columns = [
         "borough", "crashes", "observed_rate", "expected_rate", "base_rate",
         "excess", "excess_z", "excess_lower_95",
+        "excess_shrunk", "excess_shrunk_lower_95", "pooling_weight",
         "latitude", "longitude", "top_factors",
     ]
     return (

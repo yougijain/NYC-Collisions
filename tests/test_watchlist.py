@@ -115,8 +115,26 @@ def test_the_watchlist_has_the_columns_it_promises(sites):
     assert list(sites.columns) == [
         "site", "borough", "crashes", "observed_rate", "expected_rate",
         "base_rate", "excess", "excess_z", "excess_lower_95",
+        "excess_shrunk", "excess_shrunk_lower_95", "pooling_weight",
         "latitude", "longitude", "top_factors",
     ]
+
+
+def test_every_site_is_pooled_toward_one_shared_mean(sites):
+    """shrunk = mean + weight * (excess - mean), so the mean each row
+    implies has to be the same number for every site."""
+    assert sites["pooling_weight"].between(0, 1).all()
+    pulled = sites[sites["pooling_weight"] < 1]
+    implied = (
+        pulled["excess_shrunk"] - pulled["pooling_weight"] * pulled["excess"]
+    ) / (1 - pulled["pooling_weight"])
+    assert implied.max() - implied.min() < 1e-9
+
+
+def test_a_thick_site_keeps_more_of_its_excess_than_a_thin_one(sites):
+    if sites["pooling_weight"].nunique() == 1:
+        pytest.skip("the seed shows no between-site spread to pool against")
+    assert sites["pooling_weight"].corr(sites["crashes"], method="spearman") > 0.5
 
 
 def test_thin_sites_are_dropped(crashes, scores):

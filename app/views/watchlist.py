@@ -392,12 +392,21 @@ def render(boroughs: list[str], basemap) -> None:
     # not find a third number disagreeing with them by the city-wide
     # centring.
     display["Excess (pts)"] = shown["excess"] * 100
+    # The raw excess of the top sites overstates what they go on to do by
+    # about a factor of three; the pooled one is close. See
+    # models/shrinkage.py and the backtest's partial-pooling section.
+    # Absent from a watchlist built before pooling, which a cached frame on
+    # a running deployment can still be for a while after this ships.
+    columns = [
+        "Intersection", "Borough", "Crashes", "Injured", "Expected",
+        "Borough-hour base", "Excess (pts)", "Most common factors",
+    ]
+    if "excess_shrunk" in shown.columns:
+        display["Pooled (pts)"] = shown["excess_shrunk"] * 100
+        columns.insert(columns.index("Excess (pts)") + 1, "Pooled (pts)")
 
     st.dataframe(
-        display[[
-            "Intersection", "Borough", "Crashes", "Injured", "Expected",
-            "Borough-hour base", "Excess (pts)", "Most common factors",
-        ]],
+        display[columns],
         hide_index=True,
         use_container_width=True,
         column_config={
@@ -414,6 +423,12 @@ def render(boroughs: list[str], basemap) -> None:
                 format="%+.1f",
                 help="Percentage points of observed minus expected, after "
                      "centring so the city as a whole nets to zero",
+            ),
+            "Pooled (pts)": st.column_config.NumberColumn(
+                format="%+.1f",
+                help="The same excess pulled toward the city-wide mean by "
+                     "how little the site's own crashes can carry. The "
+                     "better guess at what the site will do next.",
             ),
         },
     )

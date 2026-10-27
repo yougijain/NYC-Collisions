@@ -51,6 +51,7 @@ COORDINATE_PRECISION = 6
 _RATE_COLUMNS = [
     "observed_rate", "expected_rate", "base_rate",
     "excess", "excess_z", "excess_lower_95",
+    "excess_shrunk", "excess_shrunk_lower_95", "pooling_weight",
 ]
 
 

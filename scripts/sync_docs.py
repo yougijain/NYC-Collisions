@@ -222,8 +222,62 @@ def backtest_finding(metrics: Dict) -> str:
         f"split. Across {len(sweep)} split-and-threshold combinations the "
         f"crash-mix adjustment beats the naive ordering in {wins} of them "
         f"and loses in {len(sweep) - wins}, so the comparison is not stable "
-        f"enough to claim either way. Full table in "
+        f"enough to claim either way.\n\n"
+        f"{pooling_finding(metrics)} Full table in "
         f"[`reports/backtest/results.md`](reports/backtest/results.md)."
+    )
+
+
+def pooling_finding(metrics: Dict) -> str:
+    """What partial pooling changed, worded by whether it cleared the noise.
+
+    The verdict is computed rather than written, so a rebuild that moves
+    the numbers cannot leave the prose claiming a gain that is gone.
+    """
+    pool, fade, raw = metrics["pooling"], metrics["pooled_fade"], metrics["shrinkage"]
+    sweep = [r for r in metrics["sensitivity"] if not r["underpowered"]]
+    helps = sum(1 for r in sweep if r["model_excess_pooled"] > r["model_excess"])
+    beats = sum(
+        1 for r in sweep if r["model_excess_pooled"] > r["observed_rate_pooled"]
+    )
+
+    spread = metrics.get("seed_spread")
+    if spread:
+        gain = spread["comparisons"]["pooling, model"]
+        cleared = gain["mean"] > 2 * gain["sd"] and helps > len(sweep) / 2
+        noise = (
+            f"Across {spread['seeds']} model seeds the gain from pooling "
+            f"averages {gain['mean']:+.4f} ± {gain['sd']:.4f}, and it improves "
+            f"the ordering in {helps} of {len(sweep)} split-and-threshold "
+            f"combinations"
+        )
+    else:
+        cleared = False
+        noise = (
+            f"It improves the ordering in {helps} of {len(sweep)} "
+            f"split-and-threshold combinations"
+        )
+    verdict = (
+        "**Partial pooling improves the ordering.**"
+        if cleared else
+        "**Partial pooling corrects the size of each estimate, not the order.**"
+    )
+    return (
+        f"{verdict} Shrinking each site's excess toward the citywide mean — "
+        f"a typical site keeps {pool['weight_median']:.0%} of its deviation, "
+        f"since sites truly differ by about "
+        f"{pool['between_site_sd'] * 100:.1f} points against "
+        f"{pool['median_sampling_sd'] * 100:.1f} of noise in one site's "
+        f"estimate — predicts late excess at "
+        f"**{metrics['pooled_headline']['observed']}**, against "
+        f"{metrics['pooled_naive_headline']['observed']} for raw injury "
+        f"rates pooled the same way. {noise}; the pooled model beats the "
+        f"pooled naive ordering in {beats}. What pooling does fix is "
+        f"calibration: the top {metrics['shortlist']['top_n']} sites by raw "
+        f"excess kept {raw['retained']:.0%} of it in the later window, "
+        f"while their pooled estimates kept {fade['retained']:.0%}. The "
+        f"pooled excess, published beside the raw one, is the number to "
+        f"read as a site's expected excess."
     )
 
 
