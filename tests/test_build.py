@@ -181,6 +181,41 @@ def test_a_marker_with_no_block_is_an_error(tmp_path):
         sync_docs.sync(targets=[doc])
 
 
+def test_a_marker_indented_inside_a_list_is_filled_at_its_indent(tmp_path):
+    """The README's watchlist-scope marker sits in a bullet. Anchored at
+    column zero, the pattern never found it, and the front page showed
+    "_pending_" while --check passed."""
+    import sync_docs
+
+    doc = tmp_path / "page.md"
+    doc.write_text(
+        "- a bullet\n  <!-- generated:dataset-headline -->\n  _pending_\n"
+        "  <!-- /generated:dataset-headline -->\n- next\n",
+        encoding="utf-8",
+    )
+    sync_docs.sync(targets=[doc])
+
+    written = doc.read_text(encoding="utf-8")
+    assert "_pending_" not in written
+    body = written.split("\n")[2]
+    assert body.startswith("  ") and body.strip()
+    assert written.endswith("  <!-- /generated:dataset-headline -->\n- next\n")
+
+
+def test_a_marker_that_never_closes_is_an_error(tmp_path):
+    import sync_docs
+
+    doc = tmp_path / "page.md"
+    doc.write_text("<!-- generated:dataset-headline -->\nstale\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="dataset-headline"):
+        sync_docs.sync(targets=[doc])
+
+
+def test_no_document_still_shows_a_placeholder():
+    for path in ("README.md", "docs/model_card.md"):
+        assert "_pending_" not in open(path, encoding="utf-8").read(), path
+
+
 def test_rewriting_a_block_leaves_the_prose_around_it_alone(tmp_path):
     import sync_docs
 
