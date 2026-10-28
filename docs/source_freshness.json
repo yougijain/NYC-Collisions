@@ -1,11 +1,11 @@
 {
-  "checked_at": "2026-10-23",
+  "checked_at": "2026-10-28",
   "dataset_latest": "2026-06-11",
   "source_latest": "2026-06-11",
-  "dataset_age_days": 134,
-  "source_silent_days": 134,
+  "dataset_age_days": 139,
+  "source_silent_days": 139,
   "behind_source_days": 0,
   "source_quiet": true,
   "pipeline_behind": false,
-  "headline": "NYC Open Data has published no crashes since 11 June 2026, 134 days ago. The pipeline is current with the source; the source has gone quiet."
+  "headline": "NYC Open Data has published no crashes since 11 June 2026, 139 days ago. The pipeline is current with the source; the source has gone quiet."
 }
