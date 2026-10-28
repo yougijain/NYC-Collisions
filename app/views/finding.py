@@ -4,7 +4,13 @@ import pandas as pd
 import streamlit as st
 
 import narrative
-from views.common import exposure_claim, exposure_data, query, watchlist_data
+from views.common import (
+    exposure_claim,
+    exposure_data,
+    percent_column,
+    query,
+    watchlist_data,
+)
 
 # Enough of the watchlist to show what the list is, not enough to scroll.
 PREVIEW_SITES = 6
@@ -45,6 +51,7 @@ def render(con, bounds: pd.Series, metrics: pd.Series) -> None:
 
     preview = sites.head(PREVIEW_SITES).copy()
     preview["Excess (pts)"] = preview["excess"] * 100
+    preview[["observed_rate", "expected_rate"]] *= 100
     st.dataframe(
         preview.rename(columns={
             "site": "Intersection",
@@ -57,8 +64,8 @@ def render(con, bounds: pd.Series, metrics: pd.Series) -> None:
         hide_index=True,
         use_container_width=True,
         column_config={
-            "Hurt someone": st.column_config.NumberColumn(format="percent"),
-            "Expected": st.column_config.NumberColumn(format="percent"),
+            "Hurt someone": percent_column(),
+            "Expected": percent_column(),
             "Excess (pts)": st.column_config.NumberColumn(format="%+.1f"),
         },
     )

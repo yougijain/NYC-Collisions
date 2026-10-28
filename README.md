@@ -50,6 +50,21 @@ crashes happening there would predict. That is a different claim from being
 the place you are most likely to get hurt. [The full measurement is further
 down](#what-it-does-not-prove).
 
+## Where to look
+
+If you are reviewing this rather than using it, these are the files that
+carry the argument.
+
+| Question | Where it is answered |
+|---|---|
+| How is a site scored and ranked? | [`models/watchlist.py`](models/watchlist.py) |
+| Does the ranking predict a later window, and does the model beat sorting by raw injury rate? | [`models/backtest.py`](models/backtest.py), results in [`reports/backtest/results.md`](reports/backtest/results.md) |
+| How much of a site's excess is noise? | [`models/shrinkage.py`](models/shrinkage.py) (partial pooling), [`models/significance.py`](models/significance.py) (false discovery rate, funnel limits) |
+| What does the model see, and how is it validated? | [`models/injury_risk.py`](models/injury_risk.py), [`docs/model_card.md`](docs/model_card.md) |
+| Is this a danger ranking? | [`models/exposure.py`](models/exposure.py): no, and by how much |
+| How does the data stay current, and how would anyone know if it stopped? | [`.github/workflows/refresh-data.yml`](.github/workflows/refresh-data.yml), [`scripts/check_freshness.py`](scripts/check_freshness.py) |
+| Are the numbers in this README typed or measured? | Measured: every figure between `generated` markers is rewritten by [`scripts/sync_docs.py`](scripts/sync_docs.py), and CI fails if one is edited by hand |
+
 ## Description
 
 A scheduled GitHub Actions workflow pulls new crashes from the NYC Open Data
@@ -57,7 +72,8 @@ A scheduled GitHub Actions workflow pulls new crashes from the NYC Open Data
 publishes it as a GitHub Release asset. The Streamlit dashboard queries that
 Parquet with DuckDB and renders filters, charts and a heatmap over New York.
 
-Coverage starts in January 2020 and grows whenever the source publishes, which it does not always do. <!-- generated:dataset-headline -->
+Coverage starts in January 2020 and grows whenever the source publishes, which it does not always do.
+<!-- generated:dataset-headline -->
 The current build holds **637,256 crashes** through **2026-06-11**. Of those, 244,916 (38.4%) injured or killed somebody: 326,869 people injured, 1,701 killed. Borough is known for 94.6% of them, against 69.3% as the source ships it.
 <!-- /generated:dataset-headline -->
 
@@ -166,7 +182,8 @@ Design decisions, in short:
   crashes that injured someone climbed from 0.296 in 2020 to 0.440 in 2024,
   mostly because fewer property-damage-only crashes are being reported.
 - **Calibrate the level.** That drift leaves an uncalibrated model predicting
-  0.366 for a period that ran at 0.432. A single log-odds shift fitted on 2024
+  about 0.37 for a period that ran at 0.43 (the "Mean predicted" column
+  above). A single log-odds shift fitted on 2024
   closes it, improving Brier while leaving ROC-AUC untouched to four places
   (see the table above). Platt and isotonic were tried and bought 0.0001.
 - **Brier over ROC-AUC.** The watchlist subtracts predicted rates from
@@ -215,7 +232,7 @@ Three things make that number mean something:
 - **Sites are keyed direction-free.** "A and B" and "B and A" are one
   junction.
   <!-- generated:watchlist-scope -->
-  _pending_
+  Keying sites direction-free merges 65,544 apparent intersections into 40,695 real ones. The current build lists 1,093 of them, over 413,780 scored crashes from 2022-01-01 to 2026-06-11, with 101 above z = 1.96 against roughly 27 expected by chance.
   <!-- /generated:watchlist-scope -->
 - **Every score is out of sample.** Scoring a crash with a model that trained
   on it shrinks its residual, and the residual is the entire product. Each
@@ -345,13 +362,14 @@ nothing here is causal.
 
 ### Dependencies
 
-* Python 3.9 or higher
-* `pip` package manager
+* **Python 3.13**, as pinned in `.python-version`. CI, the weekly refresh and
+  the Streamlit deployment all read that file, and `pyarrow` is pinned to a
+  release with a 3.13 wheel, so other versions are not supported.
 * `requirements.txt` runs the dashboard and the pipeline; `requirements-ml.txt`
-  adds scikit-learn and matplotlib for training. The deployed app needs only
-  the first.
-* Virtual environment tool (e.g. `venv` or `conda`)
-* OS: any (tested on Windows 10, macOS, Linux)
+  adds scikit-learn, SciPy and matplotlib for training and the backtest. The
+  deployed app installs only the first, and CI checks that every page imports
+  without the second.
+* CI runs on Linux; the suite also passes on Windows.
 
 ### Installing
 
@@ -447,32 +465,20 @@ schema changes or the fallback drifts far enough from the live data to matter.
   tokens are free from the NYC Open Data portal.
 * For other issues, open an issue on the GitHub repo.
 
-## Authors
+## Author
 
 Yougi Jain
 
-## Version History
-
-* 0.1
-    * See [contribution history](https://github.com/yougijain/ds-fundamentals-ingest-clean/graphs/contributors)
-    * Initial Release
-
 ## License
 
-This project is licensed under the MIT License.
+MIT. See [LICENSE](LICENSE).
 
-## Acknowledgements
+## Data sources
 
-#### Data Source
+Both from NYC Open Data, published under CC0 1.0:
 
-* Motor Vehicle Collisions – Crashes  
-* NYC Open Data (CC0 1.0)  
-* https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95
-
-#### ReadMe Template
-
-* [awesome-readme](https://github.com/matiassingers/awesome-readme)
-* [PurpleBooth](https://gist.github.com/PurpleBooth/109311bb0361f32d87a2)
-* [dbader](https://github.com/dbader/readme-template)
-* [zenorocha](https://gist.github.com/zenorocha/4526327)
-* [fvcproductions](https://gist.github.com/fvcproductions/1bfc2d4aecb01a834b46)
+* [Motor Vehicle Collisions – Crashes](https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95)
+  (`h9gi-nx95`). The city's data dictionary is in
+  [`data/nyc_collisions_data_description.pdf`](data/nyc_collisions_data_description.pdf).
+* [Automated Traffic Volume Counts](https://data.cityofnewyork.us/Transportation/Automated-Traffic-Volume-Counts/7ym2-wayt)
+  (`7ym2-wayt`), NYC DOT, for the exposure comparison.

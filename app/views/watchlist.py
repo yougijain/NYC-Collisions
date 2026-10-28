@@ -8,7 +8,12 @@ import streamlit as st
 
 import palette
 from models import significance as sig
-from views.common import exposure_claim, exposure_data, watchlist_data
+from views.common import (
+    exposure_claim,
+    exposure_data,
+    percent_column,
+    watchlist_data,
+)
 
 # Enough of the watchlist to see on a map without it becoming a blur.
 WATCHLIST_MAP_SITES = 60
@@ -392,15 +397,16 @@ def render(boroughs: list[str], basemap) -> None:
     # not find a third number disagreeing with them by the city-wide
     # centring.
     display["Excess (pts)"] = shown["excess"] * 100
-    # The raw excess of the top sites overstates what they go on to do by
-    # about a factor of three; the pooled one is close. See
-    # models/shrinkage.py and the backtest's partial-pooling section.
-    # Absent from a watchlist built before pooling, which a cached frame on
-    # a running deployment can still be for a while after this ships.
+    display[["Injured", "Expected", "Borough-hour base"]] *= 100
     columns = [
         "Intersection", "Borough", "Crashes", "Injured", "Expected",
         "Borough-hour base", "Excess (pts)", "Most common factors",
     ]
+    # The raw excess of the top sites overstates what they go on to do by
+    # about a factor of three; the pooled one is close. See
+    # models/shrinkage.py and the backtest's partial-pooling section. The
+    # column is absent from a watchlist built before pooling, which a
+    # cached frame on a running deployment can still be for a while.
     if "excess_shrunk" in shown.columns:
         display["Pooled (pts)"] = shown["excess_shrunk"] * 100
         columns.insert(columns.index("Excess (pts)") + 1, "Pooled (pts)")
@@ -410,14 +416,12 @@ def render(boroughs: list[str], basemap) -> None:
         hide_index=True,
         use_container_width=True,
         column_config={
-            "Injured": st.column_config.NumberColumn(
-                format="percent", help="Share of the site's crashes that injured someone"
+            "Injured": percent_column(
+                help="Share of the site's crashes that injured someone"
             ),
-            "Expected": st.column_config.NumberColumn(
-                format="percent", help="What the site's crash mix predicts"
-            ),
-            "Borough-hour base": st.column_config.NumberColumn(
-                format="percent", help="The baseline: this borough, at these hours"
+            "Expected": percent_column(help="What the site's crash mix predicts"),
+            "Borough-hour base": percent_column(
+                help="The baseline: this borough, at these hours"
             ),
             "Excess (pts)": st.column_config.NumberColumn(
                 format="%+.1f",
@@ -472,17 +476,19 @@ def render(boroughs: list[str], basemap) -> None:
         .properties(height=700),
         use_container_width=True,
     )
+    table = factors.rename(columns={
+        "factor": "Contributing factor",
+        "crashes": "Crashes",
+        "predicted_rate": "Predicted injury rate",
+        "observed_rate": "Observed injury rate",
+    })
+    table[["Predicted injury rate", "Observed injury rate"]] *= 100
     st.dataframe(
-        factors.rename(columns={
-            "factor": "Contributing factor",
-            "crashes": "Crashes",
-            "predicted_rate": "Predicted injury rate",
-            "observed_rate": "Observed injury rate",
-        }),
+        table,
         hide_index=True,
         use_container_width=True,
         column_config={
-            "Predicted injury rate": st.column_config.NumberColumn(format="percent"),
-            "Observed injury rate": st.column_config.NumberColumn(format="percent"),
+            "Predicted injury rate": percent_column(),
+            "Observed injury rate": percent_column(),
         },
     )

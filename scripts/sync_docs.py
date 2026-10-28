@@ -58,9 +58,17 @@ EXAMPLE_SITES = 5
 
 
 def _marker(name: str) -> re.Pattern:
+    """A marked region, wherever it is indented to.
+
+    Markers nested in a list item are indented with it. A pattern anchored
+    at column zero skipped those silently: the region kept its placeholder
+    and --check still passed, because a block that is never found never
+    differs from anything.
+    """
+    escaped = re.escape(name)
     return re.compile(
-        rf"(<!-- generated:{re.escape(name)} -->\n).*?(\n<!-- /generated:{re.escape(name)} -->)",
-        re.DOTALL,
+        rf"^([ \t]*)(<!-- generated:{escaped} -->)\n.*?\n[ \t]*(<!-- /generated:{escaped} -->)",
+        re.DOTALL | re.MULTILINE,
     )
 
 
@@ -437,10 +445,13 @@ def build_blocks() -> Dict[str, str]:
 
 def apply(text: str, blocks: Dict[str, str]) -> str:
     """Rewrite every marked region whose block is available."""
+    def fill(match: re.Match, body: str) -> str:
+        indent, opening, closing = match.groups()
+        lines = [indent + line if line else line for line in body.split("\n")]
+        return f"{indent}{opening}\n" + "\n".join(lines) + f"\n{indent}{closing}"
+
     for name, body in blocks.items():
-        text = _marker(name).sub(
-            lambda match: match.group(1) + body + match.group(2), text
-        )
+        text = _marker(name).sub(lambda match: fill(match, body), text)
     return text
 
 
@@ -460,6 +471,7 @@ def sync(check: bool = False, targets: Optional[List[Path]] = None) -> List[Path
 
     Raises:
         KeyError: If a document references a block that does not exist.
+        ValueError: If a marker has no closing marker to pair with.
     """
     blocks = build_blocks()
     stale: List[Path] = []
@@ -474,6 +486,15 @@ def sync(check: bool = False, targets: Optional[List[Path]] = None) -> List[Path
             raise KeyError(
                 f"{path.name} references generated blocks that do not exist: "
                 f"{sorted(unknown)}"
+            )
+
+        unmatched = [
+            name for name in markers_in(before) if not _marker(name).search(before)
+        ]
+        if unmatched:
+            raise ValueError(
+                f"{path.name} has generated markers whose region cannot be "
+                f"found, so they would never be filled: {sorted(unmatched)}"
             )
 
         after = apply(before, blocks)

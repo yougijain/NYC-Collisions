@@ -16,7 +16,7 @@ import streamlit as st
 import db
 import palette
 
-from views.common import exposure_claim, exposure_data
+from views.common import exposure_claim, exposure_data, percent_column
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 METRICS_PATH = ROOT / "reports" / "injury_risk" / "metrics.json"
@@ -189,7 +189,7 @@ def render() -> None:
                 "Fold": name.capitalize(),
                 "Period": f"{fold['from']} to {fold['to']}",
                 "Crashes": fold["rows"],
-                "Injury rate": fold["injury_rate"],
+                "Injury rate": fold["injury_rate"] * 100,
             }
             for name, fold in (("train", split["train"]),
                                ("calibration", split["calibration"]),
@@ -199,7 +199,7 @@ def render() -> None:
         use_container_width=True,
         column_config={
             "Crashes": st.column_config.NumberColumn(format="localized"),
-            "Injury rate": st.column_config.NumberColumn(format="percent"),
+            "Injury rate": percent_column(),
         },
     )
     st.caption(
