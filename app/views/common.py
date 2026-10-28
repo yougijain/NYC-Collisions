@@ -102,6 +102,16 @@ def exposure_claim(exposure: pd.DataFrame, summary: dict) -> str:
     )
 
 
+def percent_column(**kwargs) -> st.column_config.NumberColumn:
+    """A rate column, for values already scaled to 0-100.
+
+    Streamlit's "percent" preset trims trailing zeros, so one column read
+    87.1% beside 77.36%. A fixed single decimal reads evenly, and nothing
+    here is estimated finely enough to deserve a second one.
+    """
+    return st.column_config.NumberColumn(format="%.1f%%", **kwargs)
+
+
 def say(sentence: Optional[str]) -> None:
     """Put a chart's takeaway underneath it, if there is one to make."""
     if sentence:
