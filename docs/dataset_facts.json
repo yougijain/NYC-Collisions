@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-23T16:25:51+00:00",
+  "generated_at": "2026-10-28T14:52:17+00:00",
   "source": {
     "name": "NYC Open Data - Motor Vehicle Collisions: Crashes (h9gi-nx95)",
     "url": "https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95"
@@ -17,5 +17,5 @@
   "borough_known_at_source": 0.6935,
   "borough_known_after_resolution": 0.9456,
   "dataset_version": 4,
-  "built_at": "2026-10-23T16:20:15.880955+00:00"
+  "built_at": "2026-10-28T14:47:35.911816+00:00"
 }
