@@ -1,0 +1,39 @@
+name: Keep the dashboard awake
+
+# Streamlit Community Cloud sleeps an app after a stretch with no visitors,
+# and the next one waits for it to boot. Visiting every four hours keeps it
+# warm, and a run that cannot get the dashboard to render goes red: see
+# scripts/keep_awake.py for why that is the one failure here worth raising.
+on:
+  schedule:
+    - cron: "23 */4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-awake
+  cancel-in-progress: true
+
+jobs:
+  visit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+
+      - name: Install a browser
+        # Only this job needs one, so Playwright stays out of both
+        # requirements files and off the deployment.
+        run: |
+          pip install playwright==1.63.0
+          python -m playwright install --with-deps chromium
+
+      - name: Visit the dashboard
+        run: python scripts/keep_awake.py
