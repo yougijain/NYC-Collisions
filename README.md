@@ -5,7 +5,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **[Open the live dashboard →](https://nyc-collisions-current.streamlit.app/)**
- (first visit may take a moment to wake the app)
 
 <!-- generated:finding-headline -->
 Across **637,256 crashes** since 2020, **1,093 intersections** stand out: people get hurt there more often than the kinds of crashes happening there would predict. At the worst of them, **28 percentage points** more often.
@@ -450,6 +449,11 @@ publishes only if those tests pass, so a bad upstream day cannot replace a
 good dataset. It then regenerates the figures above, retrains the model and rescores the
 watchlist, and commits all of it. It needs no secrets beyond the automatic
 `GITHUB_TOKEN`.
+
+`.github/workflows/keep-awake.yml` visits the live dashboard every four hours
+in a headless browser, so Streamlit Community Cloud never puts it to sleep
+between visitors. It waits for the dashboard to actually render, and the run
+fails if it does not, which makes it the deployment's health check as well.
 
 The committed seed is not regenerated weekly; a megabyte of binary churn every
 Monday is not worth it. Re-cut it with `python scripts/build_seed.py` when the
