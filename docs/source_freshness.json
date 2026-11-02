@@ -1,11 +1,11 @@
 {
-  "checked_at": "2026-10-28",
+  "checked_at": "2026-11-02",
   "dataset_latest": "2026-06-11",
-  "source_latest": "2026-06-11",
-  "dataset_age_days": 139,
-  "source_silent_days": 139,
-  "behind_source_days": 0,
-  "source_quiet": true,
-  "pipeline_behind": false,
-  "headline": "NYC Open Data has published no crashes since 11 June 2026, 139 days ago. The pipeline is current with the source; the source has gone quiet."
+  "source_latest": "2026-10-27",
+  "dataset_age_days": 144,
+  "source_silent_days": 6,
+  "behind_source_days": 138,
+  "source_quiet": false,
+  "pipeline_behind": true,
+  "headline": "This build is 138 days behind the source, which has crashes through 27 October 2026. Records exist upstream that the pipeline has not ingested."
 }
