@@ -7,6 +7,7 @@ from clean import (
     CANONICAL_COLUMNS,
     clean,
     is_api_payload,
+    looks_like_address,
     normalize_columns,
     normalize_street_names,
 )
@@ -140,8 +141,8 @@ def test_crashes_at_the_same_moment_are_ordered_by_id():
     rows = pd.DataFrame([
         api_row(collision_id=str(i)) for i in (5, 3, 9, 1, 7)
     ])
-    assert clean(rows)["collision_id"].tolist() == [1, 3, 5, 7, 9]
-    assert clean(rows[::-1])["collision_id"].tolist() == [1, 3, 5, 7, 9]
+    assert clean(rows)["collision_id"].tolist() == ["1", "3", "5", "7", "9"]
+    assert clean(rows[::-1])["collision_id"].tolist() == ["1", "3", "5", "7", "9"]
 
 
 def test_empty_input_yields_an_empty_canonical_frame():
@@ -174,6 +175,117 @@ def test_api_cross_and_off_street_are_reconciled():
     assert out["on_street_name"] == "BARUCH DRIVE"
     assert out["cross_street_name"] == "DELANCEY STREET"
     assert out["off_street_name"] == "234 WEST 114 STREET"
+
+
+def test_an_api_row_already_the_right_way_round_is_left_alone():
+    """Since NYC fixed the mapping, the API files the cross street as the
+    cross street. Swapping it anyway would turn every intersection into
+    an address."""
+    row = api_row(
+        on_street_name="BARNES AVENUE",
+        cross_street_name="TILDEN STREET",
+        off_street_name=None,
+    )
+    out = clean(pd.DataFrame([row])).iloc[0]
+    assert out["cross_street_name"] == "TILDEN STREET"
+    assert pd.isna(out["off_street_name"])
+
+
+def test_an_old_intersection_with_its_cross_street_in_the_off_column_is_swapped():
+    row = api_row(
+        on_street_name="BARNES AVENUE",
+        cross_street_name=None,
+        off_street_name="TILDEN STREET",
+    )
+    out = clean(pd.DataFrame([row])).iloc[0]
+    assert out["cross_street_name"] == "TILDEN STREET"
+    assert pd.isna(out["off_street_name"])
+
+
+def test_a_new_address_crash_keeps_its_address():
+    row = api_row(
+        on_street_name=None,
+        cross_street_name=None,
+        off_street_name="163-47    CLAUDE AVENUE",
+    )
+    out = clean(pd.DataFrame([row])).iloc[0]
+    assert out["off_street_name"].endswith("CLAUDE AVENUE")
+    assert pd.isna(out["cross_street_name"])
+
+
+def test_an_address_with_no_house_number_stays_an_address():
+    """The corrected API has address-only crashes whose address is just a
+    street ("ADAMS STREET"), with no on_street. Read as an old intersection,
+    4,420 of them were moved into the cross-street column."""
+    row = api_row(
+        on_street_name=None,
+        cross_street_name=None,
+        off_street_name="ADAMS STREET",
+    )
+    out = clean(pd.DataFrame([row])).iloc[0]
+    assert out["off_street_name"] == "ADAMS STREET"
+    assert pd.isna(out["cross_street_name"])
+
+
+def test_a_cross_street_that_opens_with_a_number_stays_put():
+    """57 DRIVE at 246 CRESCENT is an intersection, not an address on
+    57 DRIVE, even though "246 CRESCENT" leads with a number."""
+    row = api_row(
+        on_street_name="57 DR",
+        cross_street_name="246 CRES",
+        off_street_name=None,
+    )
+    out = clean(pd.DataFrame([row])).iloc[0]
+    assert out["cross_street_name"] is not None and "246" in out["cross_street_name"]
+    assert pd.isna(out["off_street_name"])
+
+
+def test_an_old_address_only_crash_is_swapped_back():
+    row = api_row(
+        on_street_name=None,
+        cross_street_name="234       WEST 114 STREET",
+        off_street_name=None,
+    )
+    out = clean(pd.DataFrame([row])).iloc[0]
+    assert out["off_street_name"] == "234 WEST 114 STREET"
+    assert pd.isna(out["cross_street_name"])
+
+
+def test_old_and_new_orientations_in_one_payload_both_come_out_right():
+    old = api_row(collision_id="a1")
+    new = api_row(
+        collision_id="b2",
+        cross_street_name="DELANCEY STREET",
+        off_street_name="234       WEST 114 STREET",
+    )
+    out = clean(pd.DataFrame([old, new])).set_index("collision_id")
+    assert out.loc["a1", "cross_street_name"] == out.loc["b2", "cross_street_name"]
+    assert out.loc["a1", "off_street_name"] == out.loc["b2", "off_street_name"]
+
+
+def test_numbered_streets_are_not_mistaken_for_addresses():
+    values = pd.Series([
+        "150 STREET", "1 AVENUE", "86 ST", "2ND AVENUE",
+        "234 WEST 114 STREET", "163-47 CLAUDE AVENUE", "12A BROADWAY", None,
+    ])
+    assert looks_like_address(values).tolist() == [
+        False, False, False, False, True, True, True, False,
+    ]
+
+
+def test_rekeyed_string_ids_survive_cleaning():
+    """NYC's ids are now 32-character strings. Read as numbers they all
+    went null and a refresh kept none of 39,525 fetched rows."""
+    rekeyed = "c77528ba6caee0e69ba0115b87ef465d"
+    out = clean(pd.DataFrame([api_row(collision_id=rekeyed)]))
+    assert out["collision_id"].tolist() == [rekeyed]
+
+
+def test_integer_ids_from_the_csv_export_become_their_digits():
+    """pandas reads the export's ids as integers; they must not come out
+    as "4900001.0"."""
+    out = clean(pd.DataFrame([csv_row(COLLISION_ID=4900001)]))
+    assert out["collision_id"].tolist() == ["4900001"]
 
 
 def test_the_csv_export_is_left_alone():

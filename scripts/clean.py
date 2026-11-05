@@ -36,7 +36,11 @@ logger = logging.getLogger(__name__)
 #   3  add borough_resolved, inferred from coordinates where the source is blank
 #   4  canonicalise street names, which were splitting one junction into
 #      as many as fourteen
-DATASET_VERSION = 4
+#   5  NYC re-keyed every crash: collision_id is now a 32-character string,
+#      and none of the old integer ids match. The upstream street-column
+#      swap was fixed at the same time, so it is now undone per row only
+#      where it is still present
+DATASET_VERSION = 5
 
 # Column order of the published dataset.
 CANONICAL_COLUMNS: List[str] = [
@@ -109,6 +113,18 @@ _TIME_PATTERN = re.compile(r"^(\d{1,2}):(\d{2})(?::(\d{2}))?$")
 # reliable discriminator between the two payload shapes.
 _API_MARKER_COLUMN = "crash_date"
 
+# A house number, possibly hyphenated as Queens writes them ("163-47") or
+# lettered ("12A"), then whitespace, then the next word. Whether the next
+# word is a street type is what separates "234 WEST 114 STREET" from
+# "150 STREET".
+_HOUSE_NUMBER = r"^\d+(?:-\d+)?[A-Z]?\s+([A-Z0-9]+)"
+STREET_TYPES = {
+    "STREET", "ST", "AVENUE", "AVE", "AV", "ROAD", "RD", "PLACE", "PL",
+    "BOULEVARD", "BLVD", "DRIVE", "DR", "LANE", "LN", "COURT", "CT",
+    "TERRACE", "TER", "PARKWAY", "PKWY", "WAY", "LOOP", "EXPRESSWAY",
+    "EXPY", "HIGHWAY", "HWY",
+}
+
 # Below this, a payload is too small for the co-occurrence check to mean
 # anything, so the sanity warning is skipped rather than fired spuriously.
 _STREET_CHECK_MIN_ROWS = 500
@@ -147,6 +163,20 @@ def normalize_street_names(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def looks_like_address(values: pd.Series) -> pd.Series:
+    """True where a location value is a house address rather than a street.
+
+    An address leads with a house number and then names a street: "234 WEST
+    114 STREET", "163-47 CLAUDE AVENUE". A numbered street leads with a
+    number too, but the next word is the street type: "150 STREET",
+    "1 AVENUE". Ordinals ("2ND AVENUE") never match.
+    """
+    match = values.astype("string").str.upper().str.strip().str.extract(
+        _HOUSE_NUMBER, expand=False
+    )
+    return match.notna() & ~match.isin(STREET_TYPES)
+
+
 def reconcile_street_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Restore the documented meaning of the two street-location columns.
 
@@ -157,32 +187,68 @@ def reconcile_street_columns(df: pd.DataFrame) -> pd.DataFrame:
         cross_street_name  the nearest intersecting street
         off_street_name    a house address, for a mid-block crash
 
-    The JSON API returns the last two under each other's names, so a dataset
-    built from it has house numbers filed as cross streets and no identifiable
-    intersections at all. Checked against the 27,164 collision_ids present in
-    both sources, the export's CROSS STREET NAME equals the API's
-    off_street_name for 99.996% of rows and its OFF STREET NAME equals the
-    API's cross_street_name for 100%.
+    Until autumn 2026 the JSON API returned the last two under each other's
+    names, so a dataset built from it had house numbers filed as cross
+    streets and no identifiable intersections at all. Checked against the
+    27,164 collision_ids present in both sources, the export's CROSS STREET
+    NAME equaled the API's off_street_name for 99.996% of rows and its OFF
+    STREET NAME the API's cross_street_name for 100%.
+
+    When NYC re-keyed the dataset it also fixed the mapping, for old records
+    as well as new ones. So the swap is no longer applied wholesale: a row
+    is swapped back only where it still reads the old way round, judged
+    from the values themselves. A payload in the old orientation, the new
+    one, or a mix of the two all come out the same.
+
+    Swapped back:
+
+        cross is an address, off is not, and      an old address crash
+          off names a street or there is no
+          on_street
+        cross is empty, off names a street,       an old intersection
+          and there is an on_street
+
+    Left alone: cross names a street, or off is the address. The on_street
+    conditions are what keep the corrected data intact. Its 189,178
+    address-only crashes have neither on_street nor cross_street, and a few
+    thousand of those addresses carry no house number ("ADAMS STREET"); and
+    some real intersections have a cross street that opens with a number
+    ("57 DRIVE" at "246 CRESCENT"). Without the conditions, the first were
+    moved into the cross-street column and the second out of it.
 
     Args:
         df: A column-normalized frame from the API.
 
     Returns:
-        A copy with the two columns restored to their documented meaning.
+        A copy with both columns in their documented meaning.
     """
     if not {"cross_street_name", "off_street_name"}.issubset(df.columns):
         return df
 
-    out = df.rename(
-        columns={
-            "cross_street_name": "off_street_name",
-            "off_street_name": "cross_street_name",
-        }
-    )
-    logger.info("Reconciled the Socrata cross-street/off-street swap")
+    cross, off = df["cross_street_name"], df["off_street_name"]
+    cross_blank = cross.isna() | (cross.astype("string").str.strip() == "")
+    off_blank = off.isna() | (off.astype("string").str.strip() == "")
+    cross_address, off_address = looks_like_address(cross), looks_like_address(off)
 
-    # An intersection is on_street + cross_street together. If the swap left
-    # none, the API's field mapping has changed again and this needs revisiting.
+    on = df.get("on_street_name", pd.Series(pd.NA, index=df.index))
+    has_on = ~(on.isna() | (on.astype("string").str.strip() == ""))
+
+    old_address = cross_address & (~off_blank | ~has_on)
+    old_intersection = cross_blank & ~off_blank & has_on
+    reversed_ = ~off_address & (old_address | old_intersection)
+    reversed_ = reversed_.fillna(False).astype(bool)
+
+    out = df.copy()
+    out.loc[reversed_, "cross_street_name"] = off[reversed_]
+    out.loc[reversed_, "off_street_name"] = cross[reversed_]
+    if reversed_.any():
+        logger.info(
+            f"Reconciled the cross-street/off-street swap on "
+            f"{int(reversed_.sum()):,} of {len(out):,} rows"
+        )
+
+    # An intersection is on_street + cross_street together. If none
+    # survives, the API's field mapping has changed again.
     if len(out) >= _STREET_CHECK_MIN_ROWS:
         paired = (out["on_street_name"].notna() & out["cross_street_name"].notna()).mean()
         if paired == 0:
@@ -192,7 +258,6 @@ def reconcile_street_columns(df: pd.DataFrame) -> pd.DataFrame:
             )
 
     return out
-
 
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -320,9 +385,16 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
         if col in out.columns:
             out[col] = pd.to_numeric(out[col], errors="coerce").astype("Int64")
 
-    out["collision_id"] = pd.to_numeric(
-        out["collision_id"], errors="coerce"
-    ).astype("Int64")
+    # Identifiers, not quantities. They were integers until NYC re-keyed the
+    # whole dataset in autumn 2026 to 32-character hex strings, and coercing
+    # those to numbers turned every new row null, so a refresh fetched
+    # 39,525 crashes and kept none. Text holds either form; the CSV export's
+    # integer ids just become their digits.
+    ids = out["collision_id"]
+    if pd.api.types.is_numeric_dtype(ids):
+        ids = ids.astype("Int64")
+    ids = ids.astype("string").str.strip()
+    out["collision_id"] = ids.mask(ids == "")
 
     if {"latitude", "longitude"}.issubset(out.columns):
         out = _mask_invalid_coordinates(out)

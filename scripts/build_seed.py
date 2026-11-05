@@ -58,8 +58,10 @@ def sample(df: pd.DataFrame, keep_every: int = DEFAULT_KEEP_EVERY) -> pd.DataFra
         return df.reset_index(drop=True)
 
     # pandas' hash is stable across runs and platforms, unlike hash(), and
-    # spreads sequential collision_ids evenly across the buckets.
-    buckets = pd.util.hash_array(df["collision_id"].to_numpy(dtype="int64"))
+    # spreads ids evenly across the buckets. Hashed as text, since ids have
+    # been 32-character strings since NYC re-keyed the dataset.
+    ids = df["collision_id"].astype("string").to_numpy(dtype=object)
+    buckets = pd.util.hash_array(ids)
     return df[buckets % keep_every == 0].reset_index(drop=True)
 
 
