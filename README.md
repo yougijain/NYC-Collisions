@@ -334,21 +334,29 @@ nothing here is causal.
 - **Ingest**: Socrata caps responses at 50,000 rows, so larger slices are
   walked with `$limit`/`$offset` under `$order=collision_id`. Offset paging
   without a total order silently drops and repeats rows.
-- **Street columns**: the JSON API returns `cross_street_name` and
-  `off_street_name` under each other's names, so a build taken from it files
-  house numbers as cross streets and carries no identifiable intersections at
-  all. Matching the 27,164 `collision_id`s present in both the API and the CSV
-  export pins it down: the export's CROSS STREET NAME equals the API's
-  `off_street_name` for 99.996% of them, and its OFF STREET NAME equals the
-  API's `cross_street_name` for 100%. `scripts/clean.py` detects the payload
-  shape and restores the documented meaning, then collapses the fixed-width
-  padding the source pads street names with, which otherwise stops two
-  records at one intersection from grouping together.
+- **Street columns**: until autumn 2026 the JSON API returned
+  `cross_street_name` and `off_street_name` under each other's names, so a
+  build taken from it filed house numbers as cross streets and carried no
+  identifiable intersections at all. Matching the 27,164 `collision_id`s
+  present in both the API and the CSV export pinned it down: the export's
+  CROSS STREET NAME equaled the API's `off_street_name` for 99.996% of them,
+  and its OFF STREET NAME the API's `cross_street_name` for 100%. NYC has
+  since fixed the mapping, so `scripts/clean.py` no longer swaps wholesale: it
+  swaps back only rows that still read the old way round, told apart by
+  whether a value is a house address ("234 WEST 114 STREET") or a street
+  ("150 STREET"). It then collapses the fixed-width padding the source pads
+  street names with, which otherwise stops two records at one intersection
+  from grouping together.
+- **Re-keyed ids**: in autumn 2026 NYC replaced every integer `collision_id`
+  with a 32-character string, back to 2012, and none of the old ids carry
+  over. Ids are kept as text, and a refresh that fetches rows but keeps none
+  of them now fails instead of publishing an unchanged dataset as a green
+  run, which is what happened the first week after the change.
 - **Dataset versioning**: `DATASET_VERSION` in `scripts/clean.py` stamps the
   cleaning semantics into each Parquet build. An incremental run that finds a
   dataset stamped older than the code refuses to merge into it and rebuilds
-  from scratch, so a change like the street-column fix reaches every row
-  rather than only the ones fetched after it shipped.
+  from scratch, so a change like the street-column fix or the re-keyed ids
+  reaches every row rather than only the ones fetched after it shipped.
 - **Queries**: the date and borough filters are bound as DuckDB named
   parameters and pushed into every query, so aggregates are computed in SQL
   rather than by loading the table into pandas.

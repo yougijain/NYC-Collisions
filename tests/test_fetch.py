@@ -121,9 +121,10 @@ def test_amended_records_overwrite_held_ones(tmp_path, sample_raw):
     with patch.object(build_dataset, "fetch_collisions", lambda **kw: sample_raw):
         built = build_dataset.build(output=out, full=True)
 
-    target = int(built["collision_id"].iloc[-1])
+    # Ids are text in the dataset; the CSV fixture carries them as integers.
+    target = built["collision_id"].iloc[-1]
     amended = sample_raw.copy()
-    amended.loc[amended["COLLISION_ID"] == target, "BOROUGH"] = "STATEN ISLAND"
+    amended.loc[amended["COLLISION_ID"].astype(str) == target, "BOROUGH"] = "STATEN ISLAND"
 
     with patch.object(build_dataset, "fetch_collisions", lambda **kw: amended):
         updated = build_dataset.build(output=out)
