@@ -47,6 +47,10 @@ DEFAULT_OUTPUT = Path("data/clean/collisions.parquet")
 DEFAULT_OVERLAP_DAYS = 30
 COMPRESSION = "zstd"
 
+# Cleaning normally keeps all but a fraction of a percent of a batch.
+# Below this share, something upstream has likely changed shape.
+MIN_KEPT_SHARE = 0.9
+
 # Parquet key-value metadata stamped on every build.
 VERSION_KEY = b"dataset_version"
 BUILT_AT_KEY = b"built_at"
@@ -256,6 +260,31 @@ def write(df: pd.DataFrame, path: Path) -> None:
     )
 
 
+def check_cleaned(fetched: int, kept: int) -> None:
+    """Refuse a batch that cleaning emptied, and flag one it mostly emptied.
+
+    Cleaning drops a handful of rows for missing ids or dates and the odd
+    duplicate. When it drops all of them, the source has changed shape: on
+    2 November 2026 a refresh fetched 39,525 crashes, kept none because NYC
+    had re-keyed collision_id, and published an unchanged dataset as a
+    green run. Better to fail and leave last week's asset in place.
+
+    Raises:
+        RuntimeError: If rows were fetched and none survived cleaning.
+    """
+    if fetched and not kept:
+        raise RuntimeError(
+            f"Fetched {fetched:,} rows and cleaning kept none of them. The "
+            f"source has probably changed format; compare a raw record "
+            f"against scripts/clean.py before publishing anything."
+        )
+    if fetched and kept / fetched < MIN_KEPT_SHARE:
+        logger.warning(
+            f"Cleaning kept only {kept:,} of {fetched:,} fetched rows "
+            f"({kept / fetched:.0%}); check the source for a format change"
+        )
+
+
 def build(
     output: Path = DEFAULT_OUTPUT,
     since: str = DEFAULT_SINCE,
@@ -301,6 +330,7 @@ def build(
 
     incoming = clean(raw)
     logger.info(f"Cleaned {len(incoming):,} rows")
+    check_cleaned(len(raw), len(incoming))
 
     before = 0 if existing is None else len(existing)
     result = merge(existing, incoming)

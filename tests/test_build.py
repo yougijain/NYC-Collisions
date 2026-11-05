@@ -1,5 +1,7 @@
 """Tests for the build artifacts: version stamping, the seed, the facts file."""
 
+from unittest.mock import patch
+
 import pandas as pd
 import pytest
 
@@ -60,6 +62,36 @@ def test_a_current_dataset_is_built_on(tmp_path, dataset):
     out = tmp_path / "collisions.parquet"
     build_dataset.write(dataset, out)
     assert len(build_dataset.read_existing(out)) == len(dataset)
+
+
+def test_a_batch_cleaning_emptied_fails_the_build():
+    """On 2 November 2026 a refresh fetched 39,525 crashes, kept none, and
+    published last week's dataset as a green run."""
+    with pytest.raises(RuntimeError, match="kept none"):
+        build_dataset.check_cleaned(39_525, 0)
+
+
+def test_a_batch_cleaning_mostly_emptied_is_flagged(caplog):
+    build_dataset.check_cleaned(1_000, 400)
+    assert "check the source" in caplog.text
+
+
+def test_an_ordinary_batch_passes_quietly(caplog):
+    build_dataset.check_cleaned(1_000, 998)
+    build_dataset.check_cleaned(0, 0)
+    assert "check the source" not in caplog.text
+
+
+def test_a_build_whose_cleaning_keeps_nothing_leaves_the_file_alone(tmp_path, dataset):
+    out = tmp_path / "collisions.parquet"
+    build_dataset.write(dataset, out)
+    before = out.read_bytes()
+
+    unusable = pd.DataFrame([{"crash_date": None, "crash_time": None, "collision_id": None}])
+    with patch.object(build_dataset, "fetch_collisions", lambda **kw: unusable):
+        with pytest.raises(RuntimeError):
+            build_dataset.build(output=out)
+    assert out.read_bytes() == before
 
 
 def test_a_weekly_merge_does_not_depend_on_row_order(dataset):
