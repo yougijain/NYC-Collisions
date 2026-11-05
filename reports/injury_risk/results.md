@@ -8,19 +8,19 @@ model nor its calibration has seen.
 
 | Fold | Period | Crashes | Injury rate |
 |---|---|---|---|
-| Train | 2020-01-01 to 2023-12-31 | 423,970 | 0.358 |
+| Train | 2020-01-01 to 2023-12-31 | 423,977 | 0.358 |
 | Calibration | 2024-01-01 to 2024-12-31 | 91,316 | 0.441 |
-| Test | 2025-01-01 to 2026-06-11 | 121,970 | 0.432 |
+| Test | 2025-01-01 to 2026-11-01 | 155,821 | 0.441 |
 
 ## Baseline against model
 
 | Predictor | ROC-AUC | Brier | Log loss | Mean predicted | Brier skill |
 |---|---|---|---|---|---|
-| Borough x hour base rate | 0.5425 | 0.2478 | 0.6891 | 0.371 | -- |
-| Gradient boosting (uncalibrated) | 0.7946 | 0.1862 | 0.5504 | 0.365 | +24.9% |
-| Gradient boosting | 0.7946 | 0.1811 | 0.5373 | 0.422 | +26.9% |
+| Borough x hour base rate | 0.5420 | 0.2502 | 0.6940 | 0.371 | -- |
+| Gradient boosting (uncalibrated) | 0.7968 | 0.1838 | 0.5450 | 0.389 | +26.5% |
+| Gradient boosting | 0.7968 | 0.1805 | 0.5371 | 0.447 | +27.9% |
 
-The observed injury rate on the test period is 0.432.
+The observed injury rate on the test period is 0.441.
 
 Brier skill is the share of the baseline's squared error removed.
 The uncalibrated row is the same model without its level shift; the
@@ -33,17 +33,17 @@ Test ROC-AUC lost when each feature is shuffled, 5 repeats.
 
 | Feature | AUC drop | SD |
 |---|---|---|
-| factor_2 | 0.0969 | 0.0006 |
-| vehicle_2 | 0.0912 | 0.0003 |
-| factor_1 | 0.0734 | 0.0011 |
-| vehicle_1 | 0.0522 | 0.0005 |
-| road_class | 0.0296 | 0.0004 |
-| borough | 0.0052 | 0.0003 |
-| vehicle_count | 0.0051 | 0.0002 |
-| hour | 0.0048 | 0.0001 |
-| month | 0.0024 | 0.0001 |
-| at_intersection | 0.0012 | 0.0001 |
-| weekday | 0.0004 | 0.0001 |
+| vehicle_2 | 0.0992 | 0.0007 |
+| factor_2 | 0.0705 | 0.0006 |
+| vehicle_1 | 0.0624 | 0.0004 |
+| factor_1 | 0.0544 | 0.0002 |
+| road_class | 0.0352 | 0.0003 |
+| vehicle_count | 0.0062 | 0.0001 |
+| borough | 0.0052 | 0.0001 |
+| hour | 0.0044 | 0.0001 |
+| month | 0.0012 | 0.0002 |
+| at_intersection | 0.0010 | 0.0001 |
+| weekday | 0.0003 | 0.0001 |
 
 ## Calibration
 

@@ -1,14 +1,14 @@
 {
   "dataset": {
     "name": "collisions.parquet",
-    "dataset_version": 4,
-    "built_at": "2026-11-02T17:11:10.837534+00:00"
+    "dataset_version": 5,
+    "built_at": "2026-11-05T07:14:48.171163+00:00"
   },
   "split": {
     "calibration_start": "2024-01-01",
     "test_start": "2025-01-01",
     "train": {
-      "rows": 423970,
+      "rows": 423977,
       "from": "2020-01-01",
       "to": "2023-12-31",
       "injury_rate": 0.3585
@@ -20,15 +20,15 @@
       "injury_rate": 0.4405
     },
     "test": {
-      "rows": 121970,
+      "rows": 155821,
       "from": "2025-01-01",
-      "to": "2026-06-11",
-      "injury_rate": 0.4321
+      "to": "2026-11-01",
+      "injury_rate": 0.4412
     }
   },
   "model": {
-    "boosting_rounds": 436,
-    "level_shift": 0.3401,
+    "boosting_rounds": 456,
+    "level_shift": 0.3393,
     "features": [
       "borough",
       "weekday",
@@ -45,7 +45,7 @@
     "calibration_start": "2024-01-01",
     "test_start": "2025-01-01",
     "train": {
-      "rows": 423970,
+      "rows": 423977,
       "from": "2020-01-01",
       "to": "2023-12-31",
       "injury_rate": 0.3585
@@ -57,91 +57,91 @@
       "injury_rate": 0.4405
     },
     "test": {
-      "rows": 121970,
+      "rows": 155821,
       "from": "2025-01-01",
-      "to": "2026-06-11",
-      "injury_rate": 0.4321
+      "to": "2026-11-01",
+      "injury_rate": 0.4412
     }
   },
   "metrics": {
     "Borough x hour base rate": {
-      "roc_auc": 0.5425,
-      "brier": 0.2478,
-      "log_loss": 0.6891,
-      "mean_predicted": 0.3711,
-      "observed_rate": 0.4321
+      "roc_auc": 0.542,
+      "brier": 0.2502,
+      "log_loss": 0.694,
+      "mean_predicted": 0.371,
+      "observed_rate": 0.4412
     },
     "Gradient boosting (uncalibrated)": {
-      "roc_auc": 0.7946,
-      "brier": 0.1862,
-      "log_loss": 0.5504,
-      "mean_predicted": 0.365,
-      "observed_rate": 0.4321,
-      "brier_skill_vs_baseline": 0.2486
+      "roc_auc": 0.7968,
+      "brier": 0.1838,
+      "log_loss": 0.545,
+      "mean_predicted": 0.3891,
+      "observed_rate": 0.4412,
+      "brier_skill_vs_baseline": 0.2654
     },
     "Gradient boosting": {
-      "roc_auc": 0.7946,
-      "brier": 0.1811,
-      "log_loss": 0.5373,
-      "mean_predicted": 0.4225,
-      "observed_rate": 0.4321,
-      "brier_skill_vs_baseline": 0.2692
+      "roc_auc": 0.7968,
+      "brier": 0.1805,
+      "log_loss": 0.5371,
+      "mean_predicted": 0.4473,
+      "observed_rate": 0.4412,
+      "brier_skill_vs_baseline": 0.2786
     }
   },
   "feature_importance": [
     {
+      "feature": "vehicle_2",
+      "auc_drop": 0.0992,
+      "sd": 0.0007
+    },
+    {
       "feature": "factor_2",
-      "auc_drop": 0.0969,
+      "auc_drop": 0.0705,
       "sd": 0.0006
     },
     {
-      "feature": "vehicle_2",
-      "auc_drop": 0.0912,
-      "sd": 0.0003
-    },
-    {
-      "feature": "factor_1",
-      "auc_drop": 0.0734,
-      "sd": 0.0011
-    },
-    {
       "feature": "vehicle_1",
-      "auc_drop": 0.0522,
-      "sd": 0.0005
-    },
-    {
-      "feature": "road_class",
-      "auc_drop": 0.0296,
+      "auc_drop": 0.0624,
       "sd": 0.0004
     },
     {
-      "feature": "borough",
-      "auc_drop": 0.0052,
+      "feature": "factor_1",
+      "auc_drop": 0.0544,
+      "sd": 0.0002
+    },
+    {
+      "feature": "road_class",
+      "auc_drop": 0.0352,
       "sd": 0.0003
     },
     {
       "feature": "vehicle_count",
-      "auc_drop": 0.0051,
-      "sd": 0.0002
+      "auc_drop": 0.0062,
+      "sd": 0.0001
+    },
+    {
+      "feature": "borough",
+      "auc_drop": 0.0052,
+      "sd": 0.0001
     },
     {
       "feature": "hour",
-      "auc_drop": 0.0048,
+      "auc_drop": 0.0044,
       "sd": 0.0001
     },
     {
       "feature": "month",
-      "auc_drop": 0.0024,
-      "sd": 0.0001
+      "auc_drop": 0.0012,
+      "sd": 0.0002
     },
     {
       "feature": "at_intersection",
-      "auc_drop": 0.0012,
+      "auc_drop": 0.001,
       "sd": 0.0001
     },
     {
       "feature": "weekday",
-      "auc_drop": 0.0004,
+      "auc_drop": 0.0003,
       "sd": 0.0001
     }
   ]

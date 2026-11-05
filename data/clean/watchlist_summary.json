@@ -1,81 +1,82 @@
 {
   "window": {
     "from": "2022-01-01",
-    "to": "2026-06-11"
+    "to": "2026-11-01"
   },
   "min_site_crashes": 25,
-  "intersections_directed": 65544,
-  "intersections_canonical": 40695,
+  "intersections_directed": 66772,
+  "intersections_canonical": 41303,
   "folds": [
     {
       "scored_year": 2022,
-      "train_rows": 112918,
+      "train_rows": 112923,
       "calibration_year": 2021,
-      "scored_rows": 103887,
-      "boosting_rounds": 143,
-      "level_shift": 0.2077
+      "scored_rows": 103888,
+      "boosting_rounds": 180,
+      "level_shift": 0.2066
     },
     {
       "scored_year": 2023,
-      "train_rows": 223476,
+      "train_rows": 223481,
       "calibration_year": 2022,
-      "scored_rows": 96607,
-      "boosting_rounds": 291,
-      "level_shift": 0.2181
+      "scored_rows": 96608,
+      "boosting_rounds": 358,
+      "level_shift": 0.2153
     },
     {
       "scored_year": 2024,
-      "train_rows": 327363,
+      "train_rows": 327369,
       "calibration_year": 2023,
       "scored_rows": 91316,
-      "boosting_rounds": 295,
-      "level_shift": 0.3056
+      "boosting_rounds": 286,
+      "level_shift": 0.3075
     },
     {
       "scored_year": 2025,
-      "train_rows": 423970,
+      "train_rows": 423977,
       "calibration_year": 2024,
-      "scored_rows": 85546,
-      "boosting_rounds": 335,
-      "level_shift": 0.3375
+      "scored_rows": 85559,
+      "boosting_rounds": 433,
+      "level_shift": 0.3373
     },
     {
       "scored_year": 2026,
-      "train_rows": 515286,
+      "train_rows": 515293,
       "calibration_year": 2025,
-      "scored_rows": 36424,
-      "boosting_rounds": 464,
-      "level_shift": 0.2764
+      "scored_rows": 70262,
+      "boosting_rounds": 610,
+      "level_shift": -0.17
     }
   ],
-  "sites": 1093,
-  "scored_crashes": 413780,
-  "crashes_at_listed_sites": 44005,
+  "sites": 1293,
+  "scored_crashes": 447633,
+  "crashes_at_listed_sites": 52873,
   "worst_site": "2 AVENUE @ EAST 40 STREET",
-  "worst_excess": 0.2805,
-  "median_excess": 0.0138,
-  "top_decile_excess": 0.1352,
-  "sites_above_z_95": 101,
-  "sites_above_z_95_by_chance": 27.3,
+  "worst_excess": 0.2771,
+  "median_excess": 0.0176,
+  "top_decile_excess": 0.1382,
+  "sites_above_z_95": 127,
+  "sites_above_z_95_by_chance": 32.3,
   "false_discovery": {
-    "sites": 1093,
+    "sites": 1293,
     "q": 0.05,
-    "above_z_95": 101,
-    "above_z_95_by_chance": 27.3,
-    "below_z_95": 69,
-    "excess_over_chance": 73.7,
-    "survivors": 2,
-    "survivors_bonferroni": 1,
-    "smallest_p": 3.499e-05,
-    "largest_z": 3.98,
+    "above_z_95": 127,
+    "above_z_95_by_chance": 32.3,
+    "below_z_95": 73,
+    "excess_over_chance": 94.7,
+    "survivors": 3,
+    "survivors_bonferroni": 0,
+    "smallest_p": 5.069e-05,
+    "largest_z": 3.89,
     "survivor_sites": [
       "2 AVENUE @ EAST 40 STREET",
+      "BELT PARKWAY @ KNAPP STREET",
       "EAST 161 STREET @ MELROSE AVENUE"
     ]
   },
   "dataset": {
     "name": "collisions.parquet",
-    "dataset_version": 4,
-    "built_at": "2026-11-02T17:11:10.837534+00:00"
+    "dataset_version": 5,
+    "built_at": "2026-11-05T07:14:48.171163+00:00"
   }
 }

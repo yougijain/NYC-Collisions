@@ -2,7 +2,7 @@
 NYC COLLISIONS DATA QUALITY REPORT
 ============================================================
 
-Total Records: 637,256
+Total Records: 671,114
 Total Columns: 24
 
 ------------------------------------------------------------
@@ -10,76 +10,76 @@ COLUMN-LEVEL METRICS
 ------------------------------------------------------------
 
 [FAIL] borough
-   Completeness: 69.35% (441,937 non-null, 195,319 null)
+   Completeness: 73.35% (492,262 non-null, 178,852 null)
 
 [FAIL] zip_code
-   Completeness: 69.33% (441,810 non-null, 195,446 null)
+   Completeness: 69.66% (467,498 non-null, 203,616 null)
 
 [WARN] latitude
-   Completeness: 92.35% (588,506 non-null, 48,750 null)
+   Completeness: 92.61% (621,519 non-null, 49,595 null)
 
 [WARN] longitude
-   Completeness: 92.35% (588,506 non-null, 48,750 null)
+   Completeness: 92.61% (621,519 non-null, 49,595 null)
 
 [FAIL] on_street_name
-   Completeness: 72.02% (458,952 non-null, 178,304 null)
+   Completeness: 71.81% (481,927 non-null, 189,187 null)
 
 [FAIL] cross_street_name
-   Completeness: 49.84% (317,608 non-null, 319,648 null)
+   Completeness: 50.02% (335,691 non-null, 335,423 null)
 
 [FAIL] off_street_name
-   Completeness: 27.98% (178,304 non-null, 458,952 null)
+   Completeness: 28.19% (189,187 non-null, 481,927 null)
 
 [OK] number_of_persons_injured
-   Completeness: 100.0% (637,256 non-null, 0 null)
+   Completeness: 100.0% (671,114 non-null, 0 null)
 
 [OK] number_of_persons_killed
-   Completeness: 98.61% (628,398 non-null, 8,858 null)
+   Completeness: 100.0% (671,114 non-null, 0 null)
 
 [OK] number_of_pedestrians_injured
-   Completeness: 100.0% (637,256 non-null, 0 null)
+   Completeness: 100.0% (671,114 non-null, 0 null)
 
 [OK] number_of_pedestrians_killed
-   Completeness: 100.0% (637,256 non-null, 0 null)
+   Completeness: 100.0% (671,114 non-null, 0 null)
 
 [OK] number_of_cyclist_injured
-   Completeness: 100.0% (637,256 non-null, 0 null)
+   Completeness: 100.0% (671,114 non-null, 0 null)
 
 [OK] number_of_cyclist_killed
-   Completeness: 100.0% (637,256 non-null, 0 null)
+   Completeness: 100.0% (671,114 non-null, 0 null)
 
 [OK] number_of_motorist_injured
-   Completeness: 100.0% (637,256 non-null, 0 null)
+   Completeness: 100.0% (671,114 non-null, 0 null)
 
 [OK] number_of_motorist_killed
-   Completeness: 100.0% (637,256 non-null, 0 null)
+   Completeness: 100.0% (671,114 non-null, 0 null)
 
 [OK] contributing_factor_vehicle_1
-   Completeness: 99.4% (633,432 non-null, 3,824 null)
+   Completeness: 99.42% (667,222 non-null, 3,892 null)
 
 [FAIL] contributing_factor_vehicle_2
-   Completeness: 76.77% (489,221 non-null, 148,035 null)
+   Completeness: 77.15% (517,764 non-null, 153,350 null)
 
 [FAIL] contributing_factor_vehicle_3
-   Completeness: 9.23% (58,819 non-null, 578,437 null)
+   Completeness: 9.19% (61,675 non-null, 609,439 null)
 
 [OK] collision_id
-   Completeness: 100.0% (637,256 non-null, 0 null)
+   Completeness: 100.0% (671,114 non-null, 0 null)
 
 [OK] vehicle_type_code_1
-   Completeness: 98.57% (628,143 non-null, 9,113 null)
+   Completeness: 98.55% (661,383 non-null, 9,731 null)
 
 [FAIL] vehicle_type_code_2
-   Completeness: 66.74% (425,305 non-null, 211,951 null)
+   Completeness: 66.71% (447,700 non-null, 223,414 null)
 
 [FAIL] vehicle_type_code_3
-   Completeness: 8.59% (54,740 non-null, 582,516 null)
+   Completeness: 8.53% (57,246 non-null, 613,868 null)
 
 [OK] crash_datetime
-   Completeness: 100.0% (637,256 non-null, 0 null)
+   Completeness: 100.0% (671,114 non-null, 0 null)
 
 [WARN] borough_resolved
-   Completeness: 94.56% (602,589 non-null, 34,667 null)
+   Completeness: 94.93% (637,089 non-null, 34,025 null)
 
 ------------------------------------------------------------
 DATA VALIDATION CHECKS
@@ -87,17 +87,17 @@ DATA VALIDATION CHECKS
 
 [OK] Crash DateTime NULL Check: 0 NULL values (Expected: 0)
 [OK] Duplicate Collision IDs: 0 (Expected: 0)
-[OK] Date Range: 2020-01-01 00:00:00 to 2026-06-11 13:08:00
+[OK] Date Range: 2020-01-01 00:00:00 to 2026-11-01 23:45:00
 [OK] Negative Injury Counts: 0 (Expected: 0)
-[OK] Geographic Data: 92.35% complete (588,501 records with lat/long)
+[OK] Geographic Data: 92.61% complete (621,552 records with lat/long)
 
 ------------------------------------------------------------
 SUMMARY STATISTICS
 ------------------------------------------------------------
 
-Total Injuries: 326,869
-Total Fatalities: 1,701
-Average Injuries per Crash: 0.51
+Total Injuries: 348,334
+Total Fatalities: 1,824
+Average Injuries per Crash: 0.52
 Unique Boroughs: 5
 
 ------------------------------------------------------------

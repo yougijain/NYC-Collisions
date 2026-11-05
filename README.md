@@ -7,7 +7,7 @@
 **[Open the live dashboard →](https://nyc-collisions-current.streamlit.app/)**
 
 <!-- generated:finding-headline -->
-Across **637,256 crashes** since 2020, **1,093 intersections** stand out: people get hurt there more often than the kinds of crashes happening there would predict. At the worst of them, **28 percentage points** more often.
+Across **671,114 crashes** since 2020, **1,293 intersections** stand out: people get hurt there more often than the kinds of crashes happening there would predict. At the worst of them, **28 percentage points** more often.
 <!-- /generated:finding-headline -->
 
 ![The dashboard's landing page: headline figures, the worst intersections, and
@@ -41,7 +41,7 @@ automated traffic counts; joining them on produces a per-vehicle rate for the
 sites they reach. Ranking by that rate gives a substantially different order.
 
 <!-- generated:exposure-lede -->
-Over the 425 sites a counter reaches, the two orderings agree at a rank correlation of only **0.27**.
+Over the 500 sites a counter reaches, the two orderings agree at a rank correlation of only **0.24**.
 <!-- /generated:exposure-lede -->
 
 A site near the top of this list hurts people more often than the kinds of
@@ -73,7 +73,7 @@ Parquet with DuckDB and renders filters, charts and a heatmap over New York.
 
 Coverage starts in January 2020 and grows whenever the source publishes, which it does not always do.
 <!-- generated:dataset-headline -->
-The current build holds **637,256 crashes** through **2026-06-11**. Of those, 244,916 (38.4%) injured or killed somebody: 326,869 people injured, 1,701 killed. Borough is known for 94.6% of them, against 69.3% as the source ships it.
+The current build holds **671,114 crashes** through **2026-11-01**. Of those, 260,966 (38.9%) injured or killed somebody: 348,334 people injured, 1,824 killed. Borough is known for 94.9% of them, against 73.4% as the source ships it.
 <!-- /generated:dataset-headline -->
 
 `scripts/check_freshness.py` asks the source for its own newest crash on
@@ -160,11 +160,11 @@ calibration saw:
 <!-- generated:model-metrics -->
 | Predictor | ROC-AUC | Brier | Log loss | Mean predicted | Brier skill |
 |---|---|---|---|---|---|
-| Borough × hour base rate | 0.5425 | 0.2478 | 0.6891 | 0.371 | — |
-| Gradient boosting (uncalibrated) | 0.7946 | 0.1862 | 0.5504 | 0.365 | +24.9% |
-| **Gradient boosting** | **0.7946** | **0.1811** | **0.5373** | **0.422** | **+26.9%** |
+| Borough × hour base rate | 0.5420 | 0.2502 | 0.6940 | 0.371 | — |
+| Gradient boosting (uncalibrated) | 0.7968 | 0.1838 | 0.5450 | 0.389 | +26.5% |
+| **Gradient boosting** | **0.7968** | **0.1805** | **0.5371** | **0.447** | **+27.9%** |
 
-Observed injury rate on the test fold: 0.432.
+Observed injury rate on the test fold: 0.441.
 <!-- /generated:model-metrics -->
 
 The baseline is there because it is what anyone can produce in one SQL query.
@@ -213,17 +213,17 @@ second tab turns it into a list of intersections, ranked by one claim:
 > themselves account for
 
 <!-- generated:watchlist-headline -->
-**1,093 intersections** with at least 25 crashes between 2022-01-01 and 2026-06-11 qualify, over 413,780 scored crashes. The worst sits **28.1 points** above what its crash mix predicts; the top decile sits 13.5 points above. 101 clear z = 1.96, against roughly 27 expected from chance across that many sites. The head of the list is signal. The tail is a screening queue.
+**1,293 intersections** with at least 25 crashes between 2022-01-01 and 2026-11-01 qualify, over 447,633 scored crashes. The worst sits **27.7 points** above what its crash mix predicts; the top decile sits 13.8 points above. 127 clear z = 1.96, against roughly 32 expected from chance across that many sites. The head of the list is signal. The tail is a screening queue.
 <!-- /generated:watchlist-headline -->
 
 <!-- generated:watchlist-examples -->
 | Intersection | Borough | Crashes | Injured | Expected | Excess |
 |---|---|---|---|---|---|
-| 2 Avenue @ East 40 Street | Manhattan | 31 | 87.1% | 57.0% | +28.1 pts |
-| East 161 Street @ Melrose Avenue | Bronx | 53 | 77.4% | 53.2% | +22.1 pts |
-| Avenue U @ Gerritsen Avenue | Brooklyn | 31 | 83.9% | 55.4% | +26.4 pts |
-| Avenue C @ Ocean Parkway | Brooklyn | 38 | 79.0% | 52.1% | +24.8 pts |
-| Cross Bronx Expressway @ Randall Avenue | Bronx | 28 | 71.4% | 42.4% | +27.0 pts |
+| 2 Avenue @ East 40 Street | Manhattan | 31 | 87.1% | 59.2% | +27.7 pts |
+| Belt Parkway @ Knapp Street | Brooklyn | 37 | 70.3% | 41.7% | +28.4 pts |
+| University Avenue @ West Kingsbridge Road | Bronx | 25 | 80.0% | 51.6% | +28.2 pts |
+| East 161 Street @ Melrose Avenue | Bronx | 54 | 77.8% | 56.5% | +21.1 pts |
+| Avenue C @ Ocean Parkway | Brooklyn | 40 | 80.0% | 55.6% | +24.2 pts |
 <!-- /generated:watchlist-examples -->
 
 Three things make that number mean something:
@@ -231,7 +231,7 @@ Three things make that number mean something:
 - **Sites are keyed direction-free.** "A and B" and "B and A" are one
   junction.
   <!-- generated:watchlist-scope -->
-  Keying sites direction-free merges 65,544 apparent intersections into 40,695 real ones. The current build lists 1,093 of them, over 413,780 scored crashes from 2022-01-01 to 2026-06-11, with 101 above z = 1.96 against roughly 27 expected by chance.
+  Keying sites direction-free merges 66,772 apparent intersections into 41,303 real ones. The current build lists 1,293 of them, over 447,633 scored crashes from 2022-01-01 to 2026-11-01, with 127 above z = 1.96 against roughly 32 expected by chance.
   <!-- /generated:watchlist-scope -->
 - **Every score is out of sample.** Scoring a crash with a model that trained
   on it shrinks its residual, and the residual is the entire product. Each
@@ -244,11 +244,11 @@ Three things make that number mean something:
 ### What the list establishes, and what it does not
 
 <!-- generated:false-discovery -->
-Testing 1,093 intersections at once, 101 clear z = 1.96 where chance alone would produce about 27 -- an excess of roughly 74 sites. That is the argument for the list.
+Testing 1,293 intersections at once, 127 clear z = 1.96 where chance alone would produce about 32 -- an excess of roughly 95 sites. That is the argument for the list.
 
-It is not an argument for any single entry on it. Under Benjamini-Hochberg at q = 0.05, **2 of 1,093 survive** (Bonferroni: 1); the largest z anywhere is 3.98, smallest p 3.5e-05. So the ranking is a screening queue whose head is worth a site visit, not a list of 101 established hazards.
+It is not an argument for any single entry on it. Under Benjamini-Hochberg at q = 0.05, **3 of 1,293 survive** (Bonferroni: 0); the largest z anywhere is 3.89, smallest p 5.1e-05. So the ranking is a screening queue whose head is worth a site visit, not a list of 127 established hazards.
 
-The lower tail says the same thing from the other side. 69 sites sit more than 1.96 standard errors *below* expectation, also against about 27 by chance, so site-level variation is real in both directions and the upper tail is the larger half of it, not the whole story. The test is one-sided because the question is which junctions are worse than their crashes explain; the count below is what keeps that from being mistaken for a claim that the city is uniformly safe elsewhere.
+The lower tail says the same thing from the other side. 73 sites sit more than 1.96 standard errors *below* expectation, also against about 32 by chance, so site-level variation is real in both directions and the upper tail is the larger half of it, not the whole story. The test is one-sided because the question is which junctions are worse than their crashes explain; the count below is what keeps that from being mistaken for a claim that the city is uniformly safe elsewhere.
 <!-- /generated:false-discovery -->
 
 The dashboard draws this as a funnel plot: crash count against excess, with
@@ -260,7 +260,7 @@ The same scoring produces the factor table, the part a non-technical
 reader repeats back.
 
 <!-- generated:factor-examples -->
-Crashes where the officer wrote *Pedestrian/Bicyclist/Other Pedestrian Error/Confusion* injure someone 83.2% of the time, against 13.2% for *Oversized Vehicle*. Predicted and observed track within a couple of points across all 31 factors. That agreement is the calibration check worth trusting most.
+Crashes where the officer wrote *Pedestrian/Bicyclist/Other Pedestrian Error/Confusion* injure someone 83.5% of the time, against 14.1% for *Oversized Vehicle*. Predicted and observed track within a couple of points across all 32 factors. That agreement is the calibration check worth trusting most.
 <!-- /generated:factor-examples -->
 
 ```bash
@@ -274,13 +274,13 @@ scoring is clean; it does not say a site flagged in 2023 was still worth
 flagging in 2025. So `models/backtest.py` splits the window and checks.
 
 <!-- generated:backtest-finding -->
-Ranked on **2022–2023** alone, then checked against **2024–2026**, over the 247 sites with at least 20 scored crashes in both windows.
+Ranked on **2022–2023** alone, then checked against **2024–2026**, over the 271 sites with at least 20 scored crashes in both windows.
 
-**The ranking does predict the future.** Early excess and late excess correlate at a Spearman of **0.2557**, against a permutation null of -0.0006 ± 0.0637 (p = 0.0015). Of the top 50 sites, 66% were still above expectation in the later window against a 58% base rate, a 1.14x lift, and they averaged +4.0 points of excess against +0.9 for the rest.
+**The ranking does predict the future.** Early excess and late excess correlate at a Spearman of **0.2528**, against a permutation null of 0.0018 ± 0.061 (p = 0.0005). Of the top 50 sites, 74% were still above expectation in the later window against a 59% base rate, a 1.26x lift, and they averaged +5.5 points of excess against +1.8 for the rest.
 
-**What it does not show is that the model earns its place.** Sorting the same sites by raw injury rate, with no model at all, predicts late excess at **0.2575** — a tie at this split. Across 8 split-and-threshold combinations the crash-mix adjustment beats the naive ordering in 3 of them and loses in 5, so the comparison is not stable enough to claim either way.
+**What it does not show is that the model earns its place.** Sorting the same sites by raw injury rate, with no model at all, predicts late excess at **0.253** — a tie at this split. Across 8 split-and-threshold combinations the crash-mix adjustment beats the naive ordering in 3 of them and loses in 5, so the comparison is not stable enough to claim either way.
 
-**Partial pooling corrects the size of each estimate, not the order.** Shrinking each site's excess toward the citywide mean — a typical site keeps 35% of its deviation, since sites truly differ by about 6.1 points against 8.4 of noise in one site's estimate — predicts late excess at **0.2581**, against 0.257 for raw injury rates pooled the same way. Across 5 model seeds the gain from pooling averages +0.0007 ± 0.0021, and it improves the ordering in 4 of 8 split-and-threshold combinations; the pooled model beats the pooled naive ordering in 4. What pooling does fix is calibration: the top 50 sites by raw excess kept 29% of it in the later window, while their pooled estimates kept 82%. The pooled excess, published beside the raw one, is the number to read as a site's expected excess. Full table in [`reports/backtest/results.md`](reports/backtest/results.md).
+**Partial pooling corrects the size of each estimate, not the order.** Shrinking each site's excess toward the citywide mean — a typical site keeps 34% of its deviation, since sites truly differ by about 6.0 points against 8.4 of noise in one site's estimate — predicts late excess at **0.2507**, against 0.25 for raw injury rates pooled the same way. Across 5 model seeds the gain from pooling averages -0.0033 ± 0.0019, and it improves the ordering in 0 of 8 split-and-threshold combinations; the pooled model beats the pooled naive ordering in 5. What pooling does fix is calibration: the top 50 sites by raw excess kept 38% of it in the later window, while their pooled estimates kept 92%. The pooled excess, published beside the raw one, is the number to read as a site's expected excess. Full table in [`reports/backtest/results.md`](reports/backtest/results.md).
 <!-- /generated:backtest-finding -->
 
 The comparison is only fair because the model never sees where a crash
@@ -307,11 +307,11 @@ portal. `models/exposure.py` joins them on, so the gap between the two
 questions can be put in numbers instead of in a disclaimer.
 
 <!-- generated:exposure-coverage -->
-NYC DOT's automated traffic counts reach **425 of the 1,075 located sites** (39.5%): a recorder within 150m whose location text names one of the junction's own streets. Those sites see a median 14,314 vehicles a day past the counter, and a median 0.824 crashes that hurt someone per million vehicles.
+NYC DOT's automated traffic counts reach **500 of the 1,274 located sites** (39.2%): a recorder within 150m whose location text names one of the junction's own streets. Those sites see a median 13,833 vehicles a day past the counter, and a median 0.803 crashes that hurt someone per million vehicles.
 
-Ranking them by that rate rather than by crash mix gives a substantially different order — the two agree at a Spearman correlation of **0.269**. That is the distance between the two questions, in a number.
+Ranking them by that rate rather than by crash mix gives a substantially different order — the two agree at a Spearman correlation of **0.245**. That is the distance between the two questions, in a number.
 
-It is also why the watchlist is not re-ranked by it. A recorder sits on one segment rather than across a junction, and 338 of the matched counters cover a single direction, roughly half the traffic on a two-way street; sort by crashes per vehicle and the head of the list is whichever junction has the most under-measured traffic. Counts are a median 10 years old, the oldest from 2007. So every row carries a grade for how much weight it can take — 46 high (the counter names both streets and covers both directions), 190 medium, 189 low — and the ranking stays with the crash-mix residual, which covers every site rather than a third of them.
+It is also why the watchlist is not re-ranked by it. A recorder sits on one segment rather than across a junction, and 400 of the matched counters cover a single direction, roughly half the traffic on a two-way street; sort by crashes per vehicle and the head of the list is whichever junction has the most under-measured traffic. Counts are a median 10 years old, the oldest from 2007. So every row carries a grade for how much weight it can take — 52 high (the counter names both streets and covers both directions), 219 medium, 229 low — and the ranking stays with the crash-mix residual, which covers every site rather than a third of them.
 <!-- /generated:exposure-coverage -->
 
 Read the list as what it is: sites whose crashes injure people more often than

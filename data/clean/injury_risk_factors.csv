@@ -1,32 +1,33 @@
 factor,crashes,predicted_rate,observed_rate
-Pedestrian/Bicyclist/Other Pedestrian Error/Confusion,4706,0.8324,0.8309
-Not recorded,2798,0.8294,0.8452
-Lost Consciousness,842,0.8289,0.7933
-Illnes,710,0.7491,0.7028
-Failure To Yield Right-Of-Way,28247,0.6845,0.7102
-Traffic Control Disregarded,11384,0.6257,0.6369
-Glare,690,0.6111,0.5884
-Passenger Distraction,1198,0.516,0.5534
-Unsafe Speed,14581,0.5046,0.4969
-View Obstructed/Limited,3884,0.501,0.5214
-Brakes Defective,1590,0.4885,0.495
-Driver Inattention/Distraction,101478,0.4216,0.436
-Following Too Closely,24805,0.4208,0.4445
-Aggressive Driving/Road Rage,3537,0.4191,0.3904
-Outside Car Distraction,921,0.4186,0.3952
-Fell Asleep,1848,0.4075,0.3994
-Reaction To Uninvolved Vehicle,4702,0.4054,0.4351
-Pavement Slippery,3172,0.4,0.4174
-Alcohol Involvement,7716,0.3956,0.3625
-Driver Inexperience,8828,0.379,0.379
-Turning Improperly,9633,0.3706,0.3873
-Other Vehicular,13215,0.3443,0.3631
-Steering Failure,897,0.3366,0.311
-Obstruction/Debris,882,0.3317,0.3469
-Unsafe Lane Changing,8436,0.3288,0.3681
-Tire Failure/Inadequate,652,0.3258,0.3298
-Unspecified,102528,0.309,0.3399
-Passing Or Lane Usage Improper,17483,0.288,0.3154
-Backing Unsafely,12559,0.208,0.2189
-Passing Too Closely,14172,0.1342,0.1467
-Oversized Vehicle,1655,0.1323,0.1523
+Pedestrian/Bicyclist/Other Pedestrian Error/Confusion,4831,0.8345,0.8385
+Lost Consciousness,850,0.8257,0.7965
+Not recorded,2822,0.8244,0.8448
+Illnes,732,0.7467,0.709
+Failure To Yield Right-Of-Way,27538,0.7056,0.7312
+Traffic Control Disregarded,10281,0.6262,0.6457
+Glare,706,0.614,0.5921
+Passenger Distraction,1166,0.5321,0.5755
+Unsafe Speed,13407,0.5186,0.5097
+View Obstructed/Limited,3941,0.5152,0.5341
+Brakes Defective,1506,0.4712,0.4655
+Driver Inattention/Distraction,93097,0.4458,0.46
+Aggressive Driving/Road Rage,3230,0.437,0.4118
+Does Not Apply,81648,0.433,0.3638
+Outside Car Distraction,926,0.4285,0.4093
+Following Too Closely,21676,0.42,0.4506
+Reaction To Uninvolved Vehicle,4768,0.4103,0.4455
+Fell Asleep,1855,0.4054,0.3984
+Driver Inexperience,8252,0.402,0.4
+Alcohol Involvement,7398,0.4012,0.3582
+Pavement Slippery,3050,0.4006,0.422
+Turning Improperly,8700,0.3878,0.4025
+Other Vehicular,14134,0.3424,0.373
+Tire Failure/Inadequate,623,0.3372,0.3355
+Unsafe Lane Changing,7435,0.3349,0.3781
+Steering Failure,909,0.3249,0.3157
+Obstruction/Debris,905,0.3197,0.3492
+Passing Or Lane Usage Improper,15374,0.2983,0.3247
+Unspecified,76458,0.2976,0.3325
+Backing Unsafely,11158,0.2358,0.243
+Passing Too Closely,12443,0.1502,0.157
+Oversized Vehicle,1573,0.1415,0.1532
