@@ -9,236 +9,236 @@
   "late_window": {
     "from": 2024,
     "to": 2026,
-    "sites": 746
+    "sites": 754
   },
   "sites_in_both": 271,
   "predictors": [
     {
       "predictor": "model excess",
       "target": "late excess",
-      "spearman": 0.2528
+      "spearman": 0.2563
     },
     {
       "predictor": "model excess, pooled",
       "target": "late excess",
-      "spearman": 0.2507
+      "spearman": 0.2551
     },
     {
       "predictor": "model excess, lower 95%",
       "target": "late excess",
-      "spearman": 0.247
+      "spearman": 0.2478
     },
     {
       "predictor": "observed injury rate",
       "target": "late excess",
-      "spearman": 0.253
+      "spearman": 0.254
     },
     {
       "predictor": "observed injury rate, pooled",
       "target": "late excess",
-      "spearman": 0.25
+      "spearman": 0.2502
     },
     {
       "predictor": "crash count",
       "target": "late excess",
-      "spearman": 0.0121
+      "spearman": 0.0081
     },
     {
       "predictor": "model excess",
       "target": "late injury rate",
-      "spearman": 0.2384
+      "spearman": 0.2492
     },
     {
       "predictor": "model excess, pooled",
       "target": "late injury rate",
-      "spearman": 0.2324
+      "spearman": 0.2444
     },
     {
       "predictor": "model excess, lower 95%",
       "target": "late injury rate",
-      "spearman": 0.2142
+      "spearman": 0.22
     },
     {
       "predictor": "observed injury rate",
       "target": "late injury rate",
-      "spearman": 0.4451
+      "spearman": 0.4503
     },
     {
       "predictor": "observed injury rate, pooled",
       "target": "late injury rate",
-      "spearman": 0.4406
+      "spearman": 0.4453
     },
     {
       "predictor": "crash count",
       "target": "late injury rate",
-      "spearman": -0.0806
+      "spearman": -0.0865
     }
   ],
   "headline": {
-    "observed": 0.2528,
-    "null_mean": 0.0018,
-    "null_sd": 0.061,
-    "null_p95": 0.1005,
+    "observed": 0.2563,
+    "null_mean": 0.0006,
+    "null_sd": 0.0611,
+    "null_p95": 0.0996,
     "p_value": 0.0005,
     "permutations": 2000
   },
   "naive_headline": {
-    "observed": 0.253,
-    "null_mean": 0.0003,
-    "null_sd": 0.061,
-    "null_p95": 0.0997,
+    "observed": 0.254,
+    "null_mean": 0.0019,
+    "null_sd": 0.0622,
+    "null_p95": 0.1053,
     "p_value": 0.0005,
     "permutations": 2000
   },
   "pooled_headline": {
-    "observed": 0.2507,
-    "null_mean": 0.0018,
-    "null_sd": 0.0607,
-    "null_p95": 0.099,
+    "observed": 0.2551,
+    "null_mean": 0.0008,
+    "null_sd": 0.0609,
+    "null_p95": 0.0998,
     "p_value": 0.0005,
     "permutations": 2000
   },
   "pooled_naive_headline": {
-    "observed": 0.25,
-    "null_mean": -0.0,
-    "null_sd": 0.061,
-    "null_p95": 0.0991,
+    "observed": 0.2502,
+    "null_mean": 0.0021,
+    "null_sd": 0.062,
+    "null_p95": 0.1036,
     "p_value": 0.0005,
     "permutations": 2000
   },
   "pooling": {
-    "between_site_sd": 0.0601,
-    "median_sampling_sd": 0.0838,
+    "between_site_sd": 0.0603,
+    "median_sampling_sd": 0.084,
     "weight_median": 0.34,
     "weight_min": 0.251,
-    "weight_max": 0.669
+    "weight_max": 0.671
   },
   "overlap": {
-    "spearman_excess_vs_observed_rate": 0.7873,
-    "expected_rate_sd": 0.0795,
-    "expected_rate_min": 0.2092,
-    "expected_rate_max": 0.6438,
+    "spearman_excess_vs_observed_rate": 0.7923,
+    "expected_rate_sd": 0.0787,
+    "expected_rate_min": 0.2056,
+    "expected_rate_max": 0.6433,
     "observed_rate_sd": 0.1301
   },
   "deciles": [
     {
       "decile": 1,
       "sites": 28,
-      "early_excess": -0.162,
-      "late_excess": -0.0303,
-      "late_injury_rate": 0.4448
+      "early_excess": -0.1619,
+      "late_excess": -0.0317,
+      "late_injury_rate": 0.4443
     },
     {
       "decile": 2,
       "sites": 27,
-      "early_excess": -0.0976,
-      "late_excess": -0.0075,
-      "late_injury_rate": 0.4757
+      "early_excess": -0.0978,
+      "late_excess": -0.0,
+      "late_injury_rate": 0.4817
     },
     {
       "decile": 3,
       "sites": 27,
-      "early_excess": -0.062,
-      "late_excess": 0.027,
-      "late_injury_rate": 0.5101
+      "early_excess": -0.0611,
+      "late_excess": 0.0195,
+      "late_injury_rate": 0.5044
     },
     {
       "decile": 4,
       "sites": 27,
-      "early_excess": -0.0325,
-      "late_excess": 0.0211,
-      "late_injury_rate": 0.4927
+      "early_excess": -0.0333,
+      "late_excess": 0.0116,
+      "late_injury_rate": 0.4742
     },
     {
       "decile": 5,
       "sites": 27,
-      "early_excess": -0.0076,
-      "late_excess": 0.0274,
-      "late_injury_rate": 0.515
+      "early_excess": -0.0074,
+      "late_excess": 0.0308,
+      "late_injury_rate": 0.5279
     },
     {
       "decile": 6,
       "sites": 27,
-      "early_excess": 0.0176,
-      "late_excess": 0.0287,
-      "late_injury_rate": 0.5343
+      "early_excess": 0.0174,
+      "late_excess": 0.0418,
+      "late_injury_rate": 0.5494
     },
     {
       "decile": 7,
       "sites": 27,
-      "early_excess": 0.0474,
-      "late_excess": 0.034,
-      "late_injury_rate": 0.5123
+      "early_excess": 0.048,
+      "late_excess": 0.0219,
+      "late_injury_rate": 0.4994
     },
     {
       "decile": 8,
       "sites": 27,
-      "early_excess": 0.0792,
-      "late_excess": 0.02,
-      "late_injury_rate": 0.5212
+      "early_excess": 0.0803,
+      "late_excess": 0.0253,
+      "late_injury_rate": 0.5289
     },
     {
       "decile": 9,
       "sites": 27,
-      "early_excess": 0.1161,
-      "late_excess": 0.0618,
-      "late_injury_rate": 0.5413
+      "early_excess": 0.118,
+      "late_excess": 0.0519,
+      "late_injury_rate": 0.5365
     },
     {
       "decile": 10,
       "sites": 27,
-      "early_excess": 0.1814,
-      "late_excess": 0.0632,
-      "late_injury_rate": 0.5687
+      "early_excess": 0.1827,
+      "late_excess": 0.0659,
+      "late_injury_rate": 0.5692
     }
   ],
   "shortlist": {
     "top_n": 50,
-    "still_above_expectation": 0.74,
-    "base_rate": 0.5867,
-    "lift": 1.261,
-    "mean_late_excess": 0.0548,
-    "mean_late_excess_rest": 0.0175
+    "still_above_expectation": 0.7,
+    "base_rate": 0.5683,
+    "lift": 1.232,
+    "mean_late_excess": 0.0517,
+    "mean_late_excess_rest": 0.0171
   },
   "pooled_shortlist": {
     "top_n": 50,
-    "still_above_expectation": 0.72,
-    "base_rate": 0.5867,
-    "lift": 1.227,
-    "mean_late_excess": 0.0546,
-    "mean_late_excess_rest": 0.0175
+    "still_above_expectation": 0.7,
+    "base_rate": 0.5683,
+    "lift": 1.232,
+    "mean_late_excess": 0.0579,
+    "mean_late_excess_rest": 0.0157
   },
   "shrinkage": {
-    "top_n_early_excess": 0.146,
-    "top_n_late_excess": 0.0548,
-    "retained": 0.375
+    "top_n_early_excess": 0.1472,
+    "top_n_late_excess": 0.0517,
+    "retained": 0.351
   },
   "pooled_fade": {
-    "top_n_pooled_early_excess": 0.0594,
-    "top_n_late_excess": 0.0546,
-    "retained": 0.919
+    "top_n_pooled_early_excess": 0.0601,
+    "top_n_late_excess": 0.0579,
+    "retained": 0.963
   },
   "sensitivity": [
     {
       "split_year": 2023,
       "min_window_crashes": 15,
       "sites": 139,
-      "model_excess": 0.1942,
-      "observed_rate": 0.2257,
-      "model_excess_pooled": 0.1825,
-      "observed_rate_pooled": 0.2024,
-      "p_value": 0.01996,
+      "model_excess": 0.2043,
+      "observed_rate": 0.2296,
+      "model_excess_pooled": 0.1937,
+      "observed_rate_pooled": 0.2046,
+      "p_value": 0.00599,
       "underpowered": false
     },
     {
       "split_year": 2023,
       "min_window_crashes": 20,
       "sites": 58,
-      "model_excess": 0.1537,
-      "observed_rate": 0.1612,
-      "model_excess_pooled": 0.1488,
-      "observed_rate_pooled": 0.1465,
-      "p_value": 0.12774,
+      "model_excess": 0.1657,
+      "observed_rate": 0.1591,
+      "model_excess_pooled": 0.1613,
+      "observed_rate_pooled": 0.1409,
+      "p_value": 0.11776,
       "underpowered": false
     },
     {
@@ -251,10 +251,10 @@
       "split_year": 2024,
       "min_window_crashes": 15,
       "sites": 523,
-      "model_excess": 0.2662,
-      "observed_rate": 0.2918,
-      "model_excess_pooled": 0.2652,
-      "observed_rate_pooled": 0.2907,
+      "model_excess": 0.2742,
+      "observed_rate": 0.2939,
+      "model_excess_pooled": 0.2728,
+      "observed_rate_pooled": 0.2926,
       "p_value": 0.002,
       "underpowered": false
     },
@@ -262,10 +262,10 @@
       "split_year": 2024,
       "min_window_crashes": 20,
       "sites": 271,
-      "model_excess": 0.2528,
-      "observed_rate": 0.253,
-      "model_excess_pooled": 0.2507,
-      "observed_rate_pooled": 0.25,
+      "model_excess": 0.2563,
+      "observed_rate": 0.254,
+      "model_excess_pooled": 0.2551,
+      "observed_rate_pooled": 0.2502,
       "p_value": 0.002,
       "underpowered": false
     },
@@ -273,32 +273,32 @@
       "split_year": 2024,
       "min_window_crashes": 25,
       "sites": 149,
-      "model_excess": 0.2671,
-      "observed_rate": 0.2705,
-      "model_excess_pooled": 0.2537,
-      "observed_rate_pooled": 0.2564,
+      "model_excess": 0.2715,
+      "observed_rate": 0.2732,
+      "model_excess_pooled": 0.2627,
+      "observed_rate_pooled": 0.2579,
       "p_value": 0.002,
       "underpowered": false
     },
     {
       "split_year": 2025,
       "min_window_crashes": 15,
-      "sites": 469,
-      "model_excess": 0.2637,
-      "observed_rate": 0.2506,
-      "model_excess_pooled": 0.2539,
-      "observed_rate_pooled": 0.2419,
+      "sites": 471,
+      "model_excess": 0.267,
+      "observed_rate": 0.2509,
+      "model_excess_pooled": 0.2573,
+      "observed_rate_pooled": 0.2421,
       "p_value": 0.002,
       "underpowered": false
     },
     {
       "split_year": 2025,
       "min_window_crashes": 20,
-      "sites": 229,
-      "model_excess": 0.327,
-      "observed_rate": 0.2339,
-      "model_excess_pooled": 0.314,
-      "observed_rate_pooled": 0.2235,
+      "sites": 237,
+      "model_excess": 0.3301,
+      "observed_rate": 0.2354,
+      "model_excess_pooled": 0.3188,
+      "observed_rate_pooled": 0.227,
       "p_value": 0.002,
       "underpowered": false
     },
@@ -306,10 +306,10 @@
       "split_year": 2025,
       "min_window_crashes": 25,
       "sites": 118,
-      "model_excess": 0.3068,
-      "observed_rate": 0.2425,
-      "model_excess_pooled": 0.2907,
-      "observed_rate_pooled": 0.2254,
+      "model_excess": 0.3222,
+      "observed_rate": 0.2589,
+      "model_excess_pooled": 0.3059,
+      "observed_rate_pooled": 0.242,
       "p_value": 0.002,
       "underpowered": false
     }
@@ -319,62 +319,62 @@
     "seeds": 5,
     "predictors": {
       "model excess": {
-        "mean": 0.2589,
-        "sd": 0.0047,
-        "min": 0.2528,
-        "max": 0.2634
+        "mean": 0.2609,
+        "sd": 0.0045,
+        "min": 0.2563,
+        "max": 0.2672
       },
       "model excess, pooled": {
-        "mean": 0.2557,
-        "sd": 0.0051,
-        "min": 0.2506,
-        "max": 0.2613
+        "mean": 0.2584,
+        "sd": 0.0052,
+        "min": 0.2526,
+        "max": 0.2657
       },
       "model excess, lower 95%": {
-        "mean": 0.2516,
-        "sd": 0.0052,
-        "min": 0.2456,
-        "max": 0.2578
+        "mean": 0.2512,
+        "sd": 0.0053,
+        "min": 0.2451,
+        "max": 0.2574
       },
       "observed injury rate": {
-        "mean": 0.2533,
-        "sd": 0.003,
-        "min": 0.2494,
-        "max": 0.2572
+        "mean": 0.2573,
+        "sd": 0.0071,
+        "min": 0.25,
+        "max": 0.2686
       },
       "observed injury rate, pooled": {
-        "mean": 0.2503,
-        "sd": 0.003,
-        "min": 0.2463,
-        "max": 0.2541
+        "mean": 0.2537,
+        "sd": 0.0069,
+        "min": 0.2467,
+        "max": 0.2646
       },
       "crash count": {
-        "mean": 0.0094,
-        "sd": 0.0058,
-        "min": 0.0018,
-        "max": 0.017
+        "mean": 0.0029,
+        "sd": 0.0062,
+        "min": -0.0069,
+        "max": 0.0081
       }
     },
     "comparisons": {
       "pooling, model": {
-        "mean": -0.0033,
-        "sd": 0.0019,
-        "min": -0.006,
-        "max": -0.0017,
+        "mean": -0.0025,
+        "sd": 0.0015,
+        "min": -0.005,
+        "max": -0.0012,
         "wins": 0
       },
       "model vs naive, pooled": {
-        "mean": 0.0054,
-        "sd": 0.0031,
-        "min": 0.0007,
-        "max": 0.0091,
-        "wins": 5
+        "mean": 0.0047,
+        "sd": 0.006,
+        "min": -0.0033,
+        "max": 0.0106,
+        "wins": 4
       },
       "model vs naive, raw": {
-        "mean": 0.0056,
-        "sd": 0.0038,
-        "min": -0.0002,
-        "max": 0.0096,
+        "mean": 0.0036,
+        "sd": 0.006,
+        "min": -0.0052,
+        "max": 0.0101,
         "wins": 4
       }
     }
@@ -382,6 +382,6 @@
   "dataset": {
     "name": "collisions.parquet",
     "dataset_version": 5,
-    "built_at": "2026-11-05T07:14:48.171163+00:00"
+    "built_at": "2026-11-09T17:38:39.589773+00:00"
   }
 }

@@ -10,17 +10,17 @@ model nor its calibration has seen.
 |---|---|---|---|
 | Train | 2020-01-01 to 2023-12-31 | 423,977 | 0.358 |
 | Calibration | 2024-01-01 to 2024-12-31 | 91,316 | 0.441 |
-| Test | 2025-01-01 to 2026-11-01 | 155,821 | 0.441 |
+| Test | 2025-01-01 to 2026-11-06 | 157,053 | 0.442 |
 
 ## Baseline against model
 
 | Predictor | ROC-AUC | Brier | Log loss | Mean predicted | Brier skill |
 |---|---|---|---|---|---|
-| Borough x hour base rate | 0.5420 | 0.2502 | 0.6940 | 0.371 | -- |
-| Gradient boosting (uncalibrated) | 0.7968 | 0.1838 | 0.5450 | 0.389 | +26.5% |
-| Gradient boosting | 0.7968 | 0.1805 | 0.5371 | 0.447 | +27.9% |
+| Borough x hour base rate | 0.5420 | 0.2503 | 0.6942 | 0.371 | -- |
+| Gradient boosting (uncalibrated) | 0.7969 | 0.1838 | 0.5449 | 0.389 | +26.6% |
+| Gradient boosting | 0.7969 | 0.1804 | 0.5370 | 0.448 | +27.9% |
 
-The observed injury rate on the test period is 0.441.
+The observed injury rate on the test period is 0.442.
 
 Brier skill is the share of the baseline's squared error removed.
 The uncalibrated row is the same model without its level shift; the
@@ -33,17 +33,17 @@ Test ROC-AUC lost when each feature is shuffled, 5 repeats.
 
 | Feature | AUC drop | SD |
 |---|---|---|
-| vehicle_2 | 0.0992 | 0.0007 |
-| factor_2 | 0.0705 | 0.0006 |
-| vehicle_1 | 0.0624 | 0.0004 |
-| factor_1 | 0.0544 | 0.0002 |
-| road_class | 0.0352 | 0.0003 |
-| vehicle_count | 0.0062 | 0.0001 |
+| vehicle_2 | 0.0992 | 0.0006 |
+| factor_2 | 0.0701 | 0.0004 |
+| vehicle_1 | 0.0622 | 0.0006 |
+| factor_1 | 0.0540 | 0.0003 |
+| road_class | 0.0356 | 0.0002 |
+| vehicle_count | 0.0062 | 0.0002 |
 | borough | 0.0052 | 0.0001 |
-| hour | 0.0044 | 0.0001 |
+| hour | 0.0043 | 0.0001 |
 | month | 0.0012 | 0.0002 |
 | at_intersection | 0.0010 | 0.0001 |
-| weekday | 0.0003 | 0.0001 |
+| weekday | 0.0004 | 0.0000 |
 
 ## Calibration
 
