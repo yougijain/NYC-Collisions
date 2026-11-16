@@ -2,7 +2,7 @@
   "dataset": {
     "name": "collisions.parquet",
     "dataset_version": 5,
-    "built_at": "2026-11-09T17:38:39.589773+00:00"
+    "built_at": "2026-11-16T17:08:39.778378+00:00"
   },
   "split": {
     "calibration_start": "2024-01-01",
@@ -20,10 +20,10 @@
       "injury_rate": 0.4405
     },
     "test": {
-      "rows": 157053,
+      "rows": 158745,
       "from": "2025-01-01",
-      "to": "2026-11-06",
-      "injury_rate": 0.4416
+      "to": "2026-11-13",
+      "injury_rate": 0.442
     }
   },
   "model": {
@@ -57,82 +57,82 @@
       "injury_rate": 0.4405
     },
     "test": {
-      "rows": 157053,
+      "rows": 158745,
       "from": "2025-01-01",
-      "to": "2026-11-06",
-      "injury_rate": 0.4416
+      "to": "2026-11-13",
+      "injury_rate": 0.442
     }
   },
   "metrics": {
     "Borough x hour base rate": {
       "roc_auc": 0.542,
-      "brier": 0.2503,
-      "log_loss": 0.6942,
+      "brier": 0.2504,
+      "log_loss": 0.6944,
       "mean_predicted": 0.371,
-      "observed_rate": 0.4416
+      "observed_rate": 0.442
     },
     "Gradient boosting (uncalibrated)": {
-      "roc_auc": 0.7969,
+      "roc_auc": 0.7971,
       "brier": 0.1838,
       "log_loss": 0.5449,
-      "mean_predicted": 0.3894,
-      "observed_rate": 0.4416,
-      "brier_skill_vs_baseline": 0.2657
+      "mean_predicted": 0.3897,
+      "observed_rate": 0.442,
+      "brier_skill_vs_baseline": 0.266
     },
     "Gradient boosting": {
-      "roc_auc": 0.7969,
+      "roc_auc": 0.7971,
       "brier": 0.1804,
-      "log_loss": 0.537,
-      "mean_predicted": 0.4476,
-      "observed_rate": 0.4416,
-      "brier_skill_vs_baseline": 0.2793
+      "log_loss": 0.5369,
+      "mean_predicted": 0.4478,
+      "observed_rate": 0.442,
+      "brier_skill_vs_baseline": 0.2796
     }
   },
   "feature_importance": [
     {
       "feature": "vehicle_2",
-      "auc_drop": 0.0992,
-      "sd": 0.0006
+      "auc_drop": 0.1,
+      "sd": 0.0004
     },
     {
       "feature": "factor_2",
-      "auc_drop": 0.0701,
-      "sd": 0.0004
+      "auc_drop": 0.0709,
+      "sd": 0.0006
     },
     {
       "feature": "vehicle_1",
       "auc_drop": 0.0622,
-      "sd": 0.0006
+      "sd": 0.0008
     },
     {
       "feature": "factor_1",
-      "auc_drop": 0.054,
-      "sd": 0.0003
+      "auc_drop": 0.0548,
+      "sd": 0.001
     },
     {
       "feature": "road_class",
       "auc_drop": 0.0356,
-      "sd": 0.0002
+      "sd": 0.0004
     },
     {
       "feature": "vehicle_count",
-      "auc_drop": 0.0062,
+      "auc_drop": 0.0061,
       "sd": 0.0002
     },
     {
       "feature": "borough",
       "auc_drop": 0.0052,
-      "sd": 0.0001
+      "sd": 0.0002
     },
     {
       "feature": "hour",
-      "auc_drop": 0.0043,
+      "auc_drop": 0.0042,
       "sd": 0.0001
     },
     {
       "feature": "month",
-      "auc_drop": 0.0012,
-      "sd": 0.0002
+      "auc_drop": 0.0013,
+      "sd": 0.0001
     },
     {
       "feature": "at_intersection",
@@ -141,8 +141,8 @@
     },
     {
       "feature": "weekday",
-      "auc_drop": 0.0004,
-      "sd": 0.0
+      "auc_drop": 0.0003,
+      "sd": 0.0001
     }
   ]
 }

@@ -1,21 +1,21 @@
 {
-  "generated_at": "2026-11-09T17:47:28+00:00",
+  "generated_at": "2026-11-16T17:17:21+00:00",
   "source": {
     "name": "NYC Open Data - Motor Vehicle Collisions: Crashes (h9gi-nx95)",
     "url": "https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95"
   },
-  "rows": 672346,
+  "rows": 674038,
   "first_crash": "2020-01-01 00:00:00",
-  "last_crash": "2026-11-06 23:54:00",
+  "last_crash": "2026-11-13 23:59:00",
   "boroughs": 5,
-  "people_injured": 349118,
-  "people_killed": 1827,
-  "injury_crashes": 261569,
-  "injury_crash_rate": 0.389,
-  "geolocated_rate": 0.9262,
-  "at_intersection_rate": 0.5003,
-  "borough_known_at_source": 0.7339,
-  "borough_known_after_resolution": 0.9494,
+  "people_injured": 350171,
+  "people_killed": 1830,
+  "injury_crashes": 262374,
+  "injury_crash_rate": 0.3893,
+  "geolocated_rate": 0.9263,
+  "at_intersection_rate": 0.5004,
+  "borough_known_at_source": 0.7345,
+  "borough_known_after_resolution": 0.9495,
   "dataset_version": 5,
-  "built_at": "2026-11-09T17:38:39.589773+00:00"
+  "built_at": "2026-11-16T17:08:39.778378+00:00"
 }

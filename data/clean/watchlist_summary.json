@@ -1,11 +1,11 @@
 {
   "window": {
     "from": "2022-01-01",
-    "to": "2026-11-06"
+    "to": "2026-11-13"
   },
   "min_site_crashes": 25,
-  "intersections_directed": 66829,
-  "intersections_canonical": 41335,
+  "intersections_directed": 66906,
+  "intersections_canonical": 41377,
   "folds": [
     {
       "scored_year": 2022,
@@ -43,36 +43,36 @@
       "scored_year": 2026,
       "train_rows": 515293,
       "calibration_year": 2025,
-      "scored_rows": 71494,
+      "scored_rows": 73186,
       "boosting_rounds": 405,
       "level_shift": -0.1629
     }
   ],
-  "sites": 1300,
-  "scored_crashes": 448865,
-  "crashes_at_listed_sites": 53181,
+  "sites": 1309,
+  "scored_crashes": 450557,
+  "crashes_at_listed_sites": 53632,
   "worst_site": "2 AVENUE @ EAST 40 STREET",
   "worst_excess": 0.2779,
-  "median_excess": 0.018,
-  "top_decile_excess": 0.1386,
-  "sites_above_z_95": 131,
-  "sites_above_z_95_by_chance": 32.5,
+  "median_excess": 0.0169,
+  "top_decile_excess": 0.1379,
+  "sites_above_z_95": 128,
+  "sites_above_z_95_by_chance": 32.7,
   "false_discovery": {
-    "sites": 1300,
+    "sites": 1309,
     "q": 0.05,
-    "above_z_95": 131,
-    "above_z_95_by_chance": 32.5,
-    "below_z_95": 71,
-    "excess_over_chance": 98.5,
+    "above_z_95": 128,
+    "above_z_95_by_chance": 32.7,
+    "below_z_95": 69,
+    "excess_over_chance": 95.3,
     "survivors": 0,
     "survivors_bonferroni": 0,
-    "smallest_p": 5.15e-05,
+    "smallest_p": 5.14e-05,
     "largest_z": 3.88,
     "survivor_sites": []
   },
   "dataset": {
     "name": "collisions.parquet",
     "dataset_version": 5,
-    "built_at": "2026-11-09T17:38:39.589773+00:00"
+    "built_at": "2026-11-16T17:08:39.778378+00:00"
   }
 }

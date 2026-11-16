@@ -1,24 +1,24 @@
 {
-  "sites": 1300,
-  "sites_located": 1281,
-  "matched": 503,
-  "matched_share": 0.3927,
-  "named_both_streets": 223,
-  "median_metres": 75.0,
-  "median_vehicles_per_day": 13780,
-  "single_direction_counts": 402,
+  "sites": 1309,
+  "sites_located": 1290,
+  "matched": 506,
+  "matched_share": 0.3922,
+  "named_both_streets": 225,
+  "median_metres": 75.2,
+  "median_vehicles_per_day": 13748,
+  "single_direction_counts": 404,
   "median_count_age_years": 10,
   "oldest_count_year": 2007,
   "by_confidence": {
-    "low": 231,
-    "medium": 220,
-    "high": 52
+    "low": 232,
+    "medium": 221,
+    "high": 53
   },
-  "median_harmful_per_million": 0.799,
-  "spearman_excess_vs_per_vehicle": 0.25,
+  "median_harmful_per_million": 0.795,
+  "spearman_excess_vs_per_vehicle": 0.253,
   "window": {
     "from": "2022-01-01",
-    "to": "2026-11-06"
+    "to": "2026-11-13"
   },
-  "window_days": 1770
+  "window_days": 1777
 }
