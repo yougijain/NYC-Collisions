@@ -1,11 +1,11 @@
 {
-  "checked_at": "2026-11-16",
-  "dataset_latest": "2026-11-13",
-  "source_latest": "2026-11-13",
+  "checked_at": "2026-11-23",
+  "dataset_latest": "2026-11-20",
+  "source_latest": "2026-11-20",
   "dataset_age_days": 3,
   "source_silent_days": 3,
   "behind_source_days": 0,
   "source_quiet": false,
   "pipeline_behind": false,
-  "headline": "Current with the source, which has crashes through 13 November 2026."
+  "headline": "Current with the source, which has crashes through 20 November 2026."
 }

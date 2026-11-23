@@ -7,17 +7,17 @@ describe the same build.
 
 | Measure | Value |
 |---|---|
-| Crash records | 674,038 |
-| Date range | 2020-01-01 to 2026-11-13 |
+| Crash records | 675,775 |
+| Date range | 2020-01-01 to 2026-11-20 |
 | Boroughs | 5 |
-| People injured | 350,171 |
-| People killed | 1,830 |
-| Crashes causing injury or death | 262,374 (38.9%) |
+| People injured | 351,233 |
+| People killed | 1,833 |
+| Crashes causing injury or death | 263,192 (39.0%) |
 | Records with coordinates | 92.6% |
-| Records at a named intersection | 50.0% |
+| Records at a named intersection | 50.1% |
 | Borough known | 95.0% (73.5% at source) |
 | Dataset version | 5 |
-| Build timestamp | 2026-11-16T17:08:39.778378+00:00 |
+| Build timestamp | 2026-11-23T19:18:42.981426+00:00 |
 
 Source: [NYC Open Data - Motor Vehicle Collisions: Crashes (h9gi-nx95)](https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95).
-Generated 2026-11-16T17:17:21+00:00.
+Generated 2026-11-23T19:23:30+00:00.
